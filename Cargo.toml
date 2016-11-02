@@ -1,0 +1,6 @@
+[package]
+name = "git-together"
+version = "0.1.0"
+authors = ["Alpha Chen <alpha.chen@gmail.com>"]
+
+[dependencies]
