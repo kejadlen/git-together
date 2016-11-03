@@ -9,7 +9,7 @@ mod errors;
 use config::Config;
 use std::process::Command;
 
-pub struct GitTogether<C: Config> {
+pub struct GitTogether<C> {
   pub config: C,
 }
 
