@@ -72,7 +72,7 @@ mod tests {
       .map(|&(k, v)| (k.into(), v.into()))
       .collect();
     let config = MockConfig { data: RefCell::new(data) };
-    let mut gt = GitTogether { config: config };
+    let gt = GitTogether { config: config };
 
     gt.set_authors(&["jh"]).unwrap();
 
