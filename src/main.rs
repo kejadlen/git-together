@@ -9,7 +9,7 @@ use git_together::config::GitConfig;
 
 fn main() {
   let config = GitConfig { namespace: "git-together".into() };
-  let mut gt = GitTogether { config: config };
+  let gt = GitTogether { config: config };
 
   let all_args: Vec<_> = env::args().skip(1).collect();
   let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();

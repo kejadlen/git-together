@@ -16,7 +16,7 @@ pub struct GitTogether<C> {
 }
 
 impl<C: Config> GitTogether<C> {
-  pub fn set_authors(&mut self, inits: &[&str]) -> Result<()> {
+  pub fn set_authors(&self, inits: &[&str]) -> Result<()> {
     let domain = try!(self.config.get("domain").chain_err(|| "domain not set"));
     for init in inits {
       let raw = try!(self.config
