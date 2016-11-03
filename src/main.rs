@@ -24,8 +24,8 @@ fn main() {
       let signoff = gt.add_signoff(cmd).unwrap();
       signoff.status().unwrap();
     }
-    x => {
-      println!("{:?}", x);
+    args => {
+      Command::new("git").args(args).status().unwrap();
     }
   }
 }
