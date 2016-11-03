@@ -17,7 +17,7 @@ alias git=git-together
 git config --add git-together.domain rocinante.com
 
 # Adding a couple authors
-git config --add git-together.authors.jd 'James Holden; jholden'
+git config --add git-together.authors.jh 'James Holden; jholden'
 git config --add git-together.authors.nn 'Naomi Nagata; nnagata'
 
 # Adding an author with a different domain
@@ -51,4 +51,4 @@ with the `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL` environment variables
 set appropriately. This is all done by `git-together` so you don't have to
 think about it.
 
-TODO: Interaction with other aliases, scripts
+TODO: Interaction with other aliases, scripts, hub, etc.
