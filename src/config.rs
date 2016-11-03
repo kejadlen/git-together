@@ -37,6 +37,6 @@ impl Config for GitConfig {
 
   fn set(&self, name: &str, value: &str) -> Result<()> {
     let name = format!("{}.{}", self.namespace, name);
-    self.output(&[&name, &value]).and(Ok(()))
+    self.output(&[&name, value]).and(Ok(()))
   }
 }
