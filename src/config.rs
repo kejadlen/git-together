@@ -12,8 +12,7 @@ pub struct GitConfig {
 impl Config for GitConfig {
   fn get(&self, name: &str) -> Option<String> {
     let name = format!("{}.{}", self.namespace, name);
-    let output =
-      Command::new("git").args(&["config", &name]).output().unwrap();
+    let output = Command::new("git").args(&["config", &name]).output().unwrap();
 
     if !output.status.success() {
       return None;

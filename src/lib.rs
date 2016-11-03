@@ -1,5 +1,6 @@
 pub mod config;
 use config::Config;
+use std::process::Command;
 
 pub struct GitTogether<C: Config> {
   pub config: C,
@@ -18,6 +19,14 @@ impl<C: Config> GitTogether<C> {
       self.config.set("author-name", name);
       self.config.set("author-email", &email);
     }
+  }
+
+  pub fn signoff<'a>(&self, cmd: &'a mut Command) -> &'a mut Command {
+    let author_name = self.config.get("author-name").unwrap();
+    let author_email = self.config.get("author-email").unwrap();
+    cmd.env("GIT_AUTHOR_NAME", author_name)
+      .env("GIT_AUTHOR_EMAIL", author_email)
+      .arg("--signoff")
   }
 }
 
