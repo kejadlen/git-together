@@ -16,12 +16,13 @@ fn main() {
 
   match &args[..] {
     &["with", ref inits..] => {
-      gt.set_authors(inits);
+      gt.set_authors(inits).unwrap();
     }
     &[sub_cmd, ref rest..] if sub_cmd == "commit" => {
       let mut git_cmd = Command::new("git");
       let cmd = git_cmd.arg(sub_cmd).args(rest);
-      gt.signoff(cmd).status().unwrap();
+      let signoff = gt.add_signoff(cmd).unwrap();
+      signoff.status().unwrap();
     }
     x => {
       println!("{:?}", x);

@@ -6,34 +6,45 @@ extern crate error_chain;
 pub mod config;
 mod errors;
 
-use config::Config;
 use std::process::Command;
+
+use config::Config;
+use errors::*;
 
 pub struct GitTogether<C> {
   pub config: C,
 }
 
 impl<C: Config> GitTogether<C> {
-  pub fn set_authors(&mut self, inits: &[&str]) {
-    let domain = self.config.get("domain").unwrap();
+  pub fn set_authors(&mut self, inits: &[&str]) -> Result<()> {
+    let domain = try!(self.config.get("domain").chain_err(|| "domain not set"));
     for init in inits {
-      let raw = self.config.get(&format!("authors.{}", init)).unwrap();
+      let raw = try!(self.config
+        .get(&format!("authors.{}", init))
+        .chain_err(|| format!("author not found for `{}`", init)));
       let mut split = raw.split(';');
-      let name = split.next().unwrap().trim();
-      let local_part = split.next().unwrap().trim();
-      let email = format!("{}@{}", local_part, domain);
+      let name = try!(split.next().ok_or("".to_string())).trim();
+      let username = try!(split.next().ok_or("".to_string())).trim();
+      let email = format!("{}@{}", username, domain);
 
-      self.config.set("author-name", name).unwrap();
-      self.config.set("author-email", &email).unwrap();
+      try!(self.config.set("author-name", name));
+      try!(self.config.set("author-email", &email));
     }
+
+    Ok(())
   }
 
-  pub fn signoff<'a>(&self, cmd: &'a mut Command) -> &'a mut Command {
-    let author_name = self.config.get("author-name").unwrap();
-    let author_email = self.config.get("author-email").unwrap();
-    cmd.env("GIT_AUTHOR_NAME", author_name)
+  pub fn add_signoff<'a>(&self,
+                         cmd: &'a mut Command)
+                         -> Result<&'a mut Command> {
+    let author_name =
+      try!(self.config.get("author-name").chain_err(|| "author name not set"));
+    let author_email = try!(self.config
+      .get("author-email")
+      .chain_err(|| "author email not set"));
+    Ok(cmd.env("GIT_AUTHOR_NAME", author_name)
       .env("GIT_AUTHOR_EMAIL", author_email)
-      .arg("--signoff")
+      .arg("--signoff"))
   }
 }
 
@@ -63,7 +74,7 @@ mod tests {
     let config = MockConfig { data: RefCell::new(data) };
     let mut gt = GitTogether { config: config };
 
-    gt.set_authors(&["jh"]);
+    gt.set_authors(&["jh"]).unwrap();
 
     assert_eq!(gt.config.get("author-name").unwrap(),
                "James Holden".to_string());
