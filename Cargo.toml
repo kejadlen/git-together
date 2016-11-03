@@ -8,3 +8,7 @@ error-chain = "0.5"
 
 [dev-dependencies]
 tempdir = "0.3"
+
+[[test]]
+name = "integration"
+harness = false
