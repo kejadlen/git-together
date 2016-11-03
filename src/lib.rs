@@ -23,8 +23,8 @@ impl<C: Config> GitTogether<C> {
       let local_part = split.next().unwrap().trim();
       let email = format!("{}@{}", local_part, domain);
 
-      self.config.set("author-name", name);
-      self.config.set("author-email", &email);
+      self.config.set("author-name", name).unwrap();
+      self.config.set("author-email", &email).unwrap();
     }
   }
 
@@ -43,8 +43,11 @@ pub struct Author {}
 #[cfg(test)]
 mod tests {
   use super::*;
-  use config::Config;
+
   use std::collections::HashMap;
+
+  use config::Config;
+  use errors::*;
 
   #[test]
   fn set_authors() {
@@ -61,10 +64,10 @@ mod tests {
 
     gt.set_authors(&["jh"]);
 
-    assert_eq!(gt.config.get("author-name"),
-               Some("James Holden".to_string()));
-    assert_eq!(gt.config.get("author-email"),
-               Some("jholden@rocinante.com".to_string()));
+    assert_eq!(gt.config.get("author-name").unwrap(),
+               "James Holden".to_string());
+    assert_eq!(gt.config.get("author-email").unwrap(),
+               "jholden@rocinante.com".to_string());
   }
 
   struct MockConfig {
@@ -72,12 +75,13 @@ mod tests {
   }
 
   impl Config for MockConfig {
-    fn get(&self, name: &str) -> Option<String> {
-      self.data.get(name.into()).cloned()
+    fn get(&self, name: &str) -> Result<String> {
+      self.data.get(name.into()).cloned().ok_or("".into())
     }
 
-    fn set(&mut self, name: &str, value: &str) {
+    fn set(&mut self, name: &str, value: &str) -> Result<()> {
       self.data.insert(name.into(), value.into());
+      Ok(())
     }
   }
 }

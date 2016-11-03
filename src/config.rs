@@ -1,8 +1,9 @@
 use std::process::Command;
+use errors::*;
 
 pub trait Config {
-  fn get(&self, name: &str) -> Option<String>;
-  fn set(&mut self, name: &str, value: &str);
+  fn get(&self, name: &str) -> Result<String>;
+  fn set(&mut self, name: &str, value: &str) -> Result<()>;
 }
 
 pub struct GitConfig {
@@ -10,20 +11,29 @@ pub struct GitConfig {
 }
 
 impl Config for GitConfig {
-  fn get(&self, name: &str) -> Option<String> {
+  fn get(&self, name: &str) -> Result<String> {
     let name = format!("{}.{}", self.namespace, name);
-    let output = Command::new("git").args(&["config", &name]).output().unwrap();
+    let output = try!(Command::new("git")
+      .args(&["config", &name])
+      .output()
+      .chain_err(|| "failed to execute `git config`"));
 
     if !output.status.success() {
-      return None;
+      let err = format!("failed to execute `git config`: {}",
+                        String::from_utf8_lossy(&output.stderr).trim());
+      return Err(err.into());
     }
 
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    Some(stdout.trim().into())
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout.trim().into())
   }
 
-  fn set(&mut self, name: &str, value: &str) {
+  fn set(&mut self, name: &str, value: &str) -> Result<()> {
     let name = format!("{}.{}", self.namespace, name);
-    Command::new("git").args(&["config", &name, &value]).status().unwrap();
+    try!(Command::new("git")
+      .args(&["config", &name, &value])
+      .status()
+      .chain_err(|| "failed to execute `git config`"));
+    Ok(())
   }
 }
