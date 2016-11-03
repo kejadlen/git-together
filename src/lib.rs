@@ -44,6 +44,7 @@ pub struct Author {}
 mod tests {
   use super::*;
 
+  use std::cell::RefCell;
   use std::collections::HashMap;
 
   use config::Config;
@@ -59,7 +60,7 @@ mod tests {
       .iter()
       .map(|&(k, v)| (k.into(), v.into()))
       .collect();
-    let config = MockConfig { data: data };
+    let config = MockConfig { data: RefCell::new(data) };
     let mut gt = GitTogether { config: config };
 
     gt.set_authors(&["jh"]);
@@ -71,16 +72,16 @@ mod tests {
   }
 
   struct MockConfig {
-    data: HashMap<String, String>,
+    data: RefCell<HashMap<String, String>>,
   }
 
   impl Config for MockConfig {
     fn get(&self, name: &str) -> Result<String> {
-      self.data.get(name.into()).cloned().ok_or("".into())
+      self.data.borrow().get(name.into()).cloned().ok_or("".into())
     }
 
-    fn set(&mut self, name: &str, value: &str) -> Result<()> {
-      self.data.insert(name.into(), value.into());
+    fn set(&self, name: &str, value: &str) -> Result<()> {
+      self.data.borrow_mut().insert(name.into(), value.into());
       Ok(())
     }
   }

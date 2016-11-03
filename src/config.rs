@@ -3,7 +3,7 @@ use errors::*;
 
 pub trait Config {
   fn get(&self, name: &str) -> Result<String>;
-  fn set(&mut self, name: &str, value: &str) -> Result<()>;
+  fn set(&self, name: &str, value: &str) -> Result<()>;
 }
 
 pub struct GitConfig {
@@ -28,7 +28,7 @@ impl Config for GitConfig {
     Ok(stdout.trim().into())
   }
 
-  fn set(&mut self, name: &str, value: &str) -> Result<()> {
+  fn set(&self, name: &str, value: &str) -> Result<()> {
     let name = format!("{}.{}", self.namespace, name);
     try!(Command::new("git")
       .args(&["config", &name, &value])
