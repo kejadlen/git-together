@@ -88,17 +88,29 @@ impl<C: Config> GitTogether<C> {
   }
 
   fn author(domain: &str, raw: &str) -> Result<Author> {
-    let mut split = raw.split(';');
-    let name = try!(split.next()
-        .ok_or(ErrorKind::InvalidAuthor(raw.into())))
-      .trim();
-    let username = try!(split.next()
-        .ok_or(ErrorKind::InvalidAuthor(raw.into())))
-      .trim();
-    let email = format!("{}@{}", username, domain);
+    let split: Vec<_> = raw.split(';').collect();
+    if split.len() < 2 {
+      return Err(ErrorKind::InvalidAuthor(raw.into()).into());
+    }
+
+    let name = split[0].trim().to_string();
+    if name.is_empty() {
+      return Err(ErrorKind::InvalidAuthor(raw.into()).into());
+    }
+
+    let email_seed = split[1].trim();
+    if email_seed.is_empty() {
+      return Err(ErrorKind::InvalidAuthor(raw.into()).into());
+    }
+
+    let email = if email_seed.contains('@') {
+      email_seed.into()
+    } else {
+      format!("{}@{}", email_seed, domain)
+    };
 
     Ok(Author {
-      name: name.into(),
+      name: name,
       email: email,
     })
   }
@@ -124,30 +136,44 @@ mod tests {
 
   #[test]
   fn get_authors() {
-    let config = MockConfig::new(&[("domain", "rocinante.com"),
-                                   ("authors.jh", ""),
-                                   ("authors.nn", "Naomi Nagata"),
-                                   ("authors.ab", "Amos Burton; aburton"),
-                                   ("authors.ak", "Alex Kamal; akamal") /* ("authors.ca", "Chrisjen Avasarala;"),
-                                                                         * ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
-                                                                         * ("authors.jm", "Joe Miller; jmiller@starhelix.com"), */]);
+    let config =
+      MockConfig::new(&[("domain", "rocinante.com"),
+                        ("authors.jh", ""),
+                        ("authors.nn", "Naomi Nagata"),
+                        ("authors.ab", "Amos Burton; aburton"),
+                        ("authors.ak", "Alex Kamal; akamal"),
+                        ("authors.ca", "Chrisjen Avasarala;"),
+                        ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
+                        ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
     let gt = GitTogether { config: config };
 
     assert!(gt.get_authors(&["jh"]).is_err());
     assert!(gt.get_authors(&["nn"]).is_err());
-    // assert!(gt.get_authors(&["ca"]).is_err());
-    // assert!(gt.get_authors(&["jh", "bd"]).is_err());
+    assert!(gt.get_authors(&["ca"]).is_err());
+    assert!(gt.get_authors(&["jh", "bd"]).is_err());
 
     assert_eq!(gt.get_authors(&["ab", "ak"]).unwrap(),
-               vec![
-               Author { name: "Amos Burton".into(), email: "aburton@rocinante.com".into() },
-               Author { name: "Alex Kamal".into(), email: "akamal@rocinante.com".into() },
-               ]);
-    // assert_eq!(gt.get_authors(&["ab", "bd", "jm"]).unwrap(),
-    //            vec![Author { name: "Amos Burton".into(), email: "aburton@rocinante.com".into() },
-    // Author { name: "Bobbie Draper".into(), email: "bdraper@mars.mil".into() },
-    // Author { name: "Joe Miller".into(), email: "jmiller@starhelix.com".into() },
-    // ]);
+               vec![Author {
+                      name: "Amos Burton".into(),
+                      email: "aburton@rocinante.com".into(),
+                    },
+                    Author {
+                      name: "Alex Kamal".into(),
+                      email: "akamal@rocinante.com".into(),
+                    }]);
+    assert_eq!(gt.get_authors(&["ab", "bd", "jm"]).unwrap(),
+               vec![Author {
+                      name: "Amos Burton".into(),
+                      email: "aburton@rocinante.com".into(),
+                    },
+                    Author {
+                      name: "Bobbie Draper".into(),
+                      email: "bdraper@mars.mil".into(),
+                    },
+                    Author {
+                      name: "Joe Miller".into(),
+                      email: "jmiller@starhelix.com".into(),
+                    }]);
   }
 
   #[test]
