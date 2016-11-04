@@ -4,7 +4,7 @@
 extern crate error_chain;
 
 pub mod config;
-mod errors;
+pub mod errors;
 
 use std::process::Command;
 
