@@ -9,5 +9,13 @@ error_chain! {
         String::from_utf8_lossy(&output.stderr).trim(),
       )
     }
+    AuthorNotFound(init: String) {
+      description("author not found")
+      display("author not found: '{}'", init)
+    }
+    InvalidAuthor(raw: String) {
+      description("invalid author")
+      display("invalid author: '{}'", raw)
+    }
   }
 }
