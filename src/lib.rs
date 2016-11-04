@@ -30,9 +30,11 @@ impl<C: Config> GitTogether<C> {
   pub fn signoff<'a>(&self,
                          cmd: &'a mut Command)
                          -> Result<&'a mut Command> {
-    let active = try!(self.get_active());
+    let active = try!(self.config.get("active"));
+    let inits: Vec<_> = active.split('+').collect();
+    let authors = try!(self.get_authors(&inits));
 
-    let cmd = match active.get(0) {
+    let cmd = match authors.get(0) {
       Some(author) => {
         cmd.env("GIT_AUTHOR_NAME", author.name.clone())
           .env("GIT_AUTHOR_EMAIL", author.email.clone())
@@ -40,7 +42,7 @@ impl<C: Config> GitTogether<C> {
       _ => cmd,
     };
 
-    let cmd = match active.get(1) {
+    let cmd = match authors.get(1) {
       Some(committer) => {
         cmd.env("GIT_COMMITTER_NAME", committer.name.clone())
           .env("GIT_COMMITTER_EMAIL", committer.email.clone())
@@ -50,13 +52,6 @@ impl<C: Config> GitTogether<C> {
     };
 
     Ok(cmd)
-  }
-
-  fn get_active(&self) -> Result<Vec<Author>> {
-    self.config.get("active").and_then(|inits| {
-      let inits: Vec<_> = inits.split('+').collect();
-      self.get_authors(&inits)
-    })
   }
 
   fn get_authors(&self, inits: &[&str]) -> Result<Vec<Author>> {
