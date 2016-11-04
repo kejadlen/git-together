@@ -20,7 +20,7 @@ fn main() {
       &["with", ref inits..] => {
         try!(gt.set_active(inits));
       }
-      &[sub_cmd, ref rest..] if sub_cmd == "commit" => {
+      &[sub_cmd, ref rest..] if ["commit"].contains(&sub_cmd) => {
         let mut git_cmd = Command::new("git");
         let cmd = git_cmd.arg(sub_cmd).args(rest);
         let signoff = try!(gt.signoff(cmd));
