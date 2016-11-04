@@ -25,8 +25,10 @@ fn main() {
         let cmd = git_cmd.arg(sub_cmd).args(rest);
         let signoff = try!(gt.signoff(cmd));
 
-        try!(signoff.status().chain_err(|| ""));
-        try!(gt.rotate_active());
+        let status = try!(signoff.status().chain_err(|| ""));
+        if status.success() {
+          try!(gt.rotate_active());
+        }
       }
       args => {
         try!(Command::new("git").args(args).status().chain_err(|| ""));
