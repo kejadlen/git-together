@@ -187,7 +187,11 @@ mod tests {
 
   impl Config for MockConfig {
     fn get(&self, name: &str) -> Result<String> {
-      self.data.borrow().get(name.into()).cloned().ok_or("".into())
+      self.data
+        .borrow()
+        .get(name.into())
+        .cloned()
+        .ok_or(format!("name not found: '{}'", name).into())
     }
 
     fn set(&self, name: &str, value: &str) -> Result<()> {
