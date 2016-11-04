@@ -3,13 +3,13 @@
 
 extern crate error_chain;
 
-pub mod config;
 pub mod errors;
+pub mod git;
 
 use std::process::Command;
 
-use config::Config;
 use errors::*;
+use git::Config;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Author {
@@ -123,8 +123,8 @@ mod tests {
   use std::cell::RefCell;
   use std::collections::HashMap;
 
-  use config::Config;
   use errors::*;
+  use git::Config;
 
   #[test]
   fn get_authors_no_domain() {

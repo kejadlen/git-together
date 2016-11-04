@@ -5,8 +5,8 @@ extern crate git_together;
 use std::env;
 use std::process::Command;
 use git_together::GitTogether;
-use git_together::config::GitConfig;
 use git_together::errors::*;
+use git_together::git::GitConfig;
 
 fn main() {
   run(|| {
