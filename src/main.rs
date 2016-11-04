@@ -21,7 +21,7 @@ fn main() {
     &[sub_cmd, ref rest..] if sub_cmd == "commit" => {
       let mut git_cmd = Command::new("git");
       let cmd = git_cmd.arg(sub_cmd).args(rest);
-      let signoff = gt.add_signoff(cmd).unwrap();
+      let signoff = gt.signoff(cmd).unwrap();
       signoff.status().unwrap();
     }
     args => {

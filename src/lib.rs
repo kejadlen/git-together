@@ -27,7 +27,7 @@ impl<C: Config> GitTogether<C> {
       .and_then(|_| self.config.set("active", &inits.join("+")))
   }
 
-  pub fn add_signoff<'a>(&self,
+  pub fn signoff<'a>(&self,
                          cmd: &'a mut Command)
                          -> Result<&'a mut Command> {
     let active = try!(self.get_active());
