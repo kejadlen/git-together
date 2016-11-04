@@ -40,11 +40,8 @@ fn main() {
 fn run<F>(f: F)
   where F: Fn() -> Result<()>
 {
-  match f() {
-    Err(e) => {
-      println!("{}", e);
-      std::process::exit(1);
-    }
-    _ => {}
+  if let Err(e) = f() {
+    println!("{}", e);
+    std::process::exit(1);
   }
 }
