@@ -62,3 +62,5 @@ TODO: Add note about automatically adding the `include.path`.
 
 - [ ] `merge`, `revert`
 - [ ] `rebase`
+- [ ] clear active authors on bare `git with`
+- [ ] show all authors on bare `git with`
