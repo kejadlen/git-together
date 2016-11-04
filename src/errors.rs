@@ -1,6 +1,11 @@
+use std::io;
 use std::process::Output;
 
 error_chain! {
+  foreign_links {
+    io::Error, IO;
+  }
+
   errors {
     GitConfig(output: Output) {
       description("git config error")

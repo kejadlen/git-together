@@ -70,8 +70,22 @@
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
 }
 
+@test "auto-including .git-together" {
+  git-together with jh
+  run git config --local include.path
+  [ "$status" -eq 1 ]
+
+  touch .git-together
+
+  git-together with jh
+  run git config --local include.path
+  [ "$output" = "../.git-together" ]
+}
+
 setup() {
-  [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
+  # [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
+  rm -rf $BATS_TMPDIR/bin
+  cargo install --root $BATS_TMPDIR
   PATH=$BATS_TMPDIR/bin:$PATH
 
   rm -rf $BATS_TMPDIR/$BATS_TEST_NAME

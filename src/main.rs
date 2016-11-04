@@ -4,6 +4,7 @@ extern crate git_together;
 
 use std::env;
 use std::process::Command;
+
 use git_together::GitTogether;
 use git_together::errors::*;
 use git_together::git::GitConfig;
@@ -11,12 +12,14 @@ use git_together::git::GitConfig;
 fn main() {
   run(|| {
     let config = GitConfig { namespace: "git-together".into() };
+    config.auto_include();
+
     let gt = GitTogether { config: config };
 
     let all_args: Vec<_> = env::args().skip(1).collect();
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
-    match &args[..] {
+    match args.as_slice() {
       &["with", ref inits..] => {
         try!(gt.set_active(inits));
       }
@@ -47,3 +50,4 @@ fn run<F>(f: F)
     std::process::exit(1);
   }
 }
+
