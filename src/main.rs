@@ -23,6 +23,8 @@ fn main() {
       let cmd = git_cmd.arg(sub_cmd).args(rest);
       let signoff = gt.signoff(cmd).unwrap();
       signoff.status().unwrap();
+
+      gt.rotate_active().unwrap();
     }
     args => {
       Command::new("git").args(args).status().unwrap();

@@ -8,6 +8,7 @@ use tempdir::TempDir;
 fn main() {
   solo();
   pair();
+  rotation();
 }
 
 fn solo() {
@@ -36,6 +37,25 @@ fn pair() {
   assert_eq!(author, "James Holden <jholden@rocinante.com>");
   let committer = sh("git show --no-patch --format=\"%cN <%cE>\"");
   assert_eq!(committer, "Naomi Nagata <nnagata@rocinante.com>");
+
+  tmp_dir.close().unwrap();
+}
+
+fn rotation() {
+  let tmp_dir = setup();
+
+  git_together(&["with", "jh", "nn"]);
+  sh("touch foo");
+  sh("git add foo");
+  git_together(&["commit", "-m", "add foo"]);
+
+  sh("touch bar");
+  sh("git add bar");
+  git_together(&["commit", "-m", "add bar"]);
+  let author = sh("git show --no-patch --format=\"%aN <%aE>\"");
+  assert_eq!(author, "Naomi Nagata <nnagata@rocinante.com>");
+  let committer = sh("git show --no-patch --format=\"%cN <%cE>\"");
+  assert_eq!(committer, "James Holden <jholden@rocinante.com>");
 
   tmp_dir.close().unwrap();
 }
