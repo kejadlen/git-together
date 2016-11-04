@@ -39,8 +39,7 @@ impl GitConfig {
       }
     }
 
-    self.output(&["--add", "include.path", &format!("../.{}", self.namespace)])
-      .ok();
+    let _ = self.output(&["--add", "include.path", &format!("../.{}", self.namespace)]);
   }
 
   fn output(&self, args: &[&str]) -> Result<Output> {
