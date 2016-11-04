@@ -39,6 +39,37 @@
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
 }
 
+@test "mobbing" {
+  git-together with jh nn ca
+
+  touch foo
+  git add foo
+  git-together commit -m "add foo"
+
+  run git show --no-patch --format="%aN <%aE>"
+  [ "$output" = "James Holden <jholden@rocinante.com>" ]
+  run git show --no-patch --format="%cN <%cE>"
+  [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+
+  touch bar
+  git add bar
+  git-together commit -m "add bar"
+
+  run git show --no-patch --format="%aN <%aE>"
+  [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+  run git show --no-patch --format="%cN <%cE>"
+  [ "$output" = "Chrisjen Avasarala <avasarala@un.gov>" ]
+
+  touch baz
+  git add baz
+  git-together commit -m "add baz"
+
+  run git show --no-patch --format="%aN <%aE>"
+  [ "$output" = "Chrisjen Avasarala <avasarala@un.gov>" ]
+  run git show --no-patch --format="%cN <%cE>"
+  [ "$output" = "James Holden <jholden@rocinante.com>" ]
+}
+
 setup() {
   [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
   PATH=$BATS_TMPDIR/bin:$PATH
