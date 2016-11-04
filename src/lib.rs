@@ -22,7 +22,45 @@ pub struct GitTogether<C> {
 }
 
 impl<C: Config> GitTogether<C> {
-  pub fn get_authors(&self, inits: &[&str]) -> Result<Vec<Author>> {
+  pub fn set_active(&self, inits: &[&str]) -> Result<()> {
+    self.get_authors(inits)
+      .and_then(|_| self.config.set("active", &inits.join("+")))
+  }
+
+  pub fn add_signoff<'a>(&self,
+                         cmd: &'a mut Command)
+                         -> Result<&'a mut Command> {
+    let active = try!(self.get_active());
+    let mut active_iter = active.iter();
+
+    let cmd = match active_iter.next() {
+      Some(author) => {
+        cmd.env("GIT_AUTHOR_NAME", author.name.clone())
+          .env("GIT_AUTHOR_EMAIL", author.email.clone())
+      }
+      _ => cmd,
+    };
+
+    let cmd = match active_iter.next() {
+      Some(committer) => {
+        cmd.env("GIT_COMMITTER_NAME", committer.name.clone())
+          .env("GIT_COMMITTER_EMAIL", committer.email.clone())
+          .arg("--signoff")
+      }
+      _ => cmd,
+    };
+
+    Ok(cmd)
+  }
+
+  fn get_active(&self) -> Result<Vec<Author>> {
+    self.config.get("active").and_then(|inits| {
+      let inits: Vec<_> = inits.split('+').collect();
+      self.get_authors(&inits)
+    })
+  }
+
+  fn get_authors(&self, inits: &[&str]) -> Result<Vec<Author>> {
     let domain = try!(self.config.get("domain"));
     inits.iter()
       .map(|&init| {
@@ -51,37 +89,6 @@ impl<C: Config> GitTogether<C> {
       })
       .collect()
   }
-
-  pub fn set_authors(&self, inits: &[&str]) -> Result<()> {
-    let domain = try!(self.config.get("domain").chain_err(|| "domain not set"));
-    for init in inits {
-      let raw = try!(self.config
-        .get(&format!("authors.{}", init))
-        .chain_err(|| format!("author not found for `{}`", init)));
-      let mut split = raw.split(';');
-      let name = try!(split.next().ok_or("".to_string())).trim();
-      let username = try!(split.next().ok_or("".to_string())).trim();
-      let email = format!("{}@{}", username, domain);
-
-      try!(self.config.set("author-name", name));
-      try!(self.config.set("author-email", &email));
-    }
-
-    Ok(())
-  }
-
-  pub fn add_signoff<'a>(&self,
-                         cmd: &'a mut Command)
-                         -> Result<&'a mut Command> {
-    let author_name =
-      try!(self.config.get("author-name").chain_err(|| "author name not set"));
-    let author_email = try!(self.config
-      .get("author-email")
-      .chain_err(|| "author email not set"));
-    Ok(cmd.env("GIT_AUTHOR_NAME", author_name)
-      .env("GIT_AUTHOR_EMAIL", author_email)
-      .arg("--signoff"))
-  }
 }
 
 #[cfg(test)]
@@ -104,15 +111,13 @@ mod tests {
 
   #[test]
   fn get_authors() {
-    let config = MockConfig::new(&[
-                                 ("domain", "rocinante.com"),
-                                 ("authors.jh", ""),
-                                 ("authors.nn", "Naomi Nagata"),
-                                 ("authors.ab", "Amos Burton; aburton"),
-                                 // ("authors.ca", "Chrisjen Avasarala;"),
-                                 // ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
-                                 // ("authors.jm", "Joe Miller; jmiller@starhelix.com"),
-    ]);
+    let config = MockConfig::new(&[("domain", "rocinante.com"),
+                                   ("authors.jh", ""),
+                                   ("authors.nn", "Naomi Nagata"),
+                                   ("authors.ab", "Amos Burton; aburton"),
+                                   ("authors.ak", "Alex Kamal; akamal") /* ("authors.ca", "Chrisjen Avasarala;"),
+                                                                         * ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
+                                                                         * ("authors.jm", "Joe Miller; jmiller@starhelix.com"), */]);
     let gt = GitTogether { config: config };
 
     assert!(gt.get_authors(&["jh"]).is_err());
@@ -120,6 +125,11 @@ mod tests {
     // assert!(gt.get_authors(&["ca"]).is_err());
     // assert!(gt.get_authors(&["jh", "bd"]).is_err());
 
+    assert_eq!(gt.get_authors(&["ab", "ak"]).unwrap(),
+               vec![
+               Author { name: "Amos Burton".into(), email: "aburton@rocinante.com".into() },
+               Author { name: "Alex Kamal".into(), email: "akamal@rocinante.com".into() },
+               ]);
     // assert_eq!(gt.get_authors(&["ab", "bd", "jm"]).unwrap(),
     //            vec![Author { name: "Amos Burton".into(), email: "aburton@rocinante.com".into() },
     // Author { name: "Bobbie Draper".into(), email: "bdraper@mars.mil".into() },
@@ -128,18 +138,17 @@ mod tests {
   }
 
   #[test]
-  fn set_authors() {
+  fn set_active() {
     let config = MockConfig::new(&[("domain", "rocinante.com"),
                                    ("authors.jh", "James Holden; jholden"),
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
     let gt = GitTogether { config: config };
 
-    gt.set_authors(&["jh"]).unwrap();
+    gt.set_active(&["jh"]).unwrap();
+    assert_eq!(gt.config.get("active").unwrap(), "jh".to_string());
 
-    assert_eq!(gt.config.get("author-name").unwrap(),
-               "James Holden".to_string());
-    assert_eq!(gt.config.get("author-email").unwrap(),
-               "jholden@rocinante.com".to_string());
+    gt.set_active(&["jh", "nn"]).unwrap();
+    assert_eq!(gt.config.get("active").unwrap(), "jh+nn".to_string());
   }
 
   struct MockConfig {

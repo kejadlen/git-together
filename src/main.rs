@@ -16,7 +16,7 @@ fn main() {
 
   match &args[..] {
     &["with", ref inits..] => {
-      gt.set_authors(inits).unwrap();
+      gt.set_active(inits).unwrap();
     }
     &[sub_cmd, ref rest..] if sub_cmd == "commit" => {
       let mut git_cmd = Command::new("git");

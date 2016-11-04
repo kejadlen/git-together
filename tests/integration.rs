@@ -7,7 +7,7 @@ use tempdir::TempDir;
 
 fn main() {
   solo();
-  // pair();
+  pair();
 }
 
 fn solo() {
@@ -24,21 +24,21 @@ fn solo() {
   tmp_dir.close().unwrap();
 }
 
-// fn pair() {
-//   let tmp_dir = setup();
+fn pair() {
+  let tmp_dir = setup();
 
-//   git_together(&["with", "jh", "nn"]);
-//   sh("touch foo");
-//   sh("git add foo");
-//   git_together(&["commit", "-m", "add foo"]);
+  git_together(&["with", "jh", "nn"]);
+  sh("touch foo");
+  sh("git add foo");
+  git_together(&["commit", "-m", "add foo"]);
 
-//   let author = sh("git show --no-patch --format=\"%aN <%aE>\"");
-//   assert_eq!(author, "James Holden <jholden@rocinante.com>");
-//   let committer = sh("git show --no-patch --format=\"%cN <%cE>\"");
-//   assert_eq!(committer, "Naomi Nagata <nnagata@rocinante.com>");
+  let author = sh("git show --no-patch --format=\"%aN <%aE>\"");
+  assert_eq!(author, "James Holden <jholden@rocinante.com>");
+  let committer = sh("git show --no-patch --format=\"%cN <%cE>\"");
+  assert_eq!(committer, "Naomi Nagata <nnagata@rocinante.com>");
 
-//   tmp_dir.close().unwrap();
-// }
+  tmp_dir.close().unwrap();
+}
 
 fn setup() -> TempDir {
   let tmp_dir = TempDir::new("git-together").expect("TempDir::new");
