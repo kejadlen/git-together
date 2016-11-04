@@ -13,15 +13,18 @@ habits.
 # `git-together` is meant to be aliased as `git`
 alias git=git-together
 
+# Use .git-together for author configuration
+git config --add include.path ../.git-together
+
 # Setting the default domain
-git config --add git-together.domain rocinante.com
+git config --file .git-together --add git-together.domain rocinante.com
 
 # Adding a couple authors
-git config --add git-together.authors.jh 'James Holden; jholden'
-git config --add git-together.authors.nn 'Naomi Nagata; nnagata'
+git config --file .git-together --add git-together.authors.jh 'James Holden; jholden'
+git config --file .git-together --add git-together.authors.nn 'Naomi Nagata; nnagata'
 
 # Adding an author with a different domain
-git config --add git-together.authors.ca 'Chrisjen Avasarala; avasarala@un.gov'
+git config --file .git-together --add git-together.authors.ca 'Chrisjen Avasarala; avasarala@un.gov'
 
 # Pairing
 git with jh nn
@@ -30,9 +33,9 @@ git commit
 ```
 
 Soloing and mobbing are set by simply passing in the right number of authors to
-`git with`.
-
-TODO: rotation, mobbing
+`git with`. `git-together` automatically rotates authors after making a commit
+so that the author/committer roles are fairly spread across the pair/mob over
+time.
 
 ### Technical Details
 
@@ -52,3 +55,10 @@ set appropriately. This is all done by `git-together` so you don't have to
 think about it.
 
 TODO: Interaction with other aliases, scripts, hub, etc.
+
+TODO: Add note about automatically adding the `include.path`.
+
+### TODO
+
+- [ ] `merge`, `revert`
+- [ ] `rebase`
