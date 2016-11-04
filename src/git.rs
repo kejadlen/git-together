@@ -21,9 +21,12 @@ pub struct GitConfig {
 
 impl GitConfig {
   pub fn auto_include(&self) {
+    let filename = format!(".{}", self.namespace);
+    let include_path = format!("../{}", filename);
+
     // Make sure .git-together exists
     if let Ok(mut path) = root() {
-      path.push(&format!(".{}", self.namespace));
+      path.push(&filename);
       if !path.exists() {
         return;
       }
@@ -34,12 +37,12 @@ impl GitConfig {
     // Make sure we're not already including .git-together
     if let Ok(output) = self.output(&["--local", "--get-all", "include.path"]) {
       let stdout = String::from_utf8_lossy(&output.stdout);
-      if stdout.split('\n').any(|x| x == "../git-together") {
+      if stdout.split('\n').any(|x| x == include_path) {
         return;
       }
     }
 
-    let _ = self.output(&["--add", "include.path", &format!("../.{}", self.namespace)]);
+    let _ = self.output(&["--add", "include.path", &include_path]);
   }
 
   fn output(&self, args: &[&str]) -> Result<Output> {

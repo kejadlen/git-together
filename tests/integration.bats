@@ -80,6 +80,10 @@
   git-together with jh
   run git config --local include.path
   [ "$output" = "../.git-together" ]
+
+  git-together with jh
+  run git config --local --get-all include.path
+  [ "$output" = "../.git-together" ]
 }
 
 setup() {
