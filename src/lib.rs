@@ -27,9 +27,7 @@ impl<C: Config> GitTogether<C> {
       .and_then(|_| self.config.set("active", &inits.join("+")))
   }
 
-  pub fn signoff<'a>(&self,
-                         cmd: &'a mut Command)
-                         -> Result<&'a mut Command> {
+  pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
     let active = try!(self.config.get("active"));
     let inits: Vec<_> = active.split('+').collect();
     let authors = try!(self.get_authors(&inits));
@@ -52,6 +50,23 @@ impl<C: Config> GitTogether<C> {
     };
 
     Ok(cmd)
+  }
+
+  fn get_active(&self) -> Result<Vec<String>> {
+    self.config
+      .get("active")
+      .map(|active| active.split('+').map(|s| s.into()).collect())
+  }
+
+  pub fn rotate_active(&self) -> Result<()> {
+    self.get_active().and_then(|active| {
+      let mut inits: Vec<_> = active.iter().map(String::as_ref).collect();
+      if !inits.is_empty() {
+        let author = inits.remove(0);
+        inits.push(author);
+      }
+      self.set_active(&inits[..])
+    })
   }
 
   fn get_authors(&self, inits: &[&str]) -> Result<Vec<Author>> {
@@ -139,10 +154,22 @@ mod tests {
     let gt = GitTogether { config: config };
 
     gt.set_active(&["jh"]).unwrap();
-    assert_eq!(gt.config.get("active").unwrap(), "jh".to_string());
+    assert_eq!(gt.get_active().unwrap(), vec!["jh"]);
 
     gt.set_active(&["jh", "nn"]).unwrap();
-    assert_eq!(gt.config.get("active").unwrap(), "jh+nn".to_string());
+    assert_eq!(gt.get_active().unwrap(), vec!["jh", "nn"]);
+  }
+
+  #[test]
+  fn rotate_active() {
+    let config = MockConfig::new(&[("active", "jh+nn"),
+                                   ("domain", "rocinante.com"),
+                                   ("authors.jh", "James Holden; jholden"),
+                                   ("authors.nn", "Naomi Nagata; nnagata")]);
+    let gt = GitTogether { config: config };
+
+    gt.rotate_active().unwrap();
+    assert_eq!(gt.get_active().unwrap(), vec!["nn", "jh"]);
   }
 
   struct MockConfig {
