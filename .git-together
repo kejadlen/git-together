@@ -1,0 +1,4 @@
+[git-together]
+	domain = pivotal.io
+[git-together "authors"]
+	ac = "Alpha Chen; achen"
