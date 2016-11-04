@@ -81,22 +81,26 @@ impl<C: Config> GitTogether<C> {
               return Err(ErrorKind::InvalidAuthor(raw).into());
             }
 
-            let mut split = raw.split(';');
-            let name = try!(split.next()
-                .ok_or(ErrorKind::InvalidAuthor(raw.clone())))
-              .trim();
-            let username = try!(split.next()
-                .ok_or(ErrorKind::InvalidAuthor(raw.clone())))
-              .trim();
-            let email = format!("{}@{}", username, domain);
-
-            Ok(Author {
-              name: name.into(),
-              email: email,
-            })
+            Self::author(&domain, &raw)
           })
       })
       .collect()
+  }
+
+  fn author(domain: &str, raw: &str) -> Result<Author> {
+    let mut split = raw.split(';');
+    let name = try!(split.next()
+        .ok_or(ErrorKind::InvalidAuthor(raw.into())))
+      .trim();
+    let username = try!(split.next()
+        .ok_or(ErrorKind::InvalidAuthor(raw.into())))
+      .trim();
+    let email = format!("{}@{}", username, domain);
+
+    Ok(Author {
+      name: name.into(),
+      email: email,
+    })
   }
 }
 
