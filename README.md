@@ -30,6 +30,16 @@ git config --file .git-together --add git-together.authors.ca 'Chrisjen Avasaral
 git with jh nn
 # ...
 git commit
+
+# Soloing
+git with nn
+# ...
+git commit
+
+# Mobbing
+git with jh nn ca
+# ...
+git commit
 ```
 
 Soloing and mobbing are set by simply passing in the right number of authors to
