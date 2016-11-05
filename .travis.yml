@@ -1,4 +1,8 @@
 language: rust
 rust:
   - nightly
-script: cargo test --lib --verbose
+install:
+  - git clone https://github.com/sstephenson/bats.git /tmp/bats && /tmp/bats/install.sh $HOME
+script:
+  - cargo test --verbose
+  - ~/bin/bats --tap bats
