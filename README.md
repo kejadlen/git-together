@@ -70,6 +70,19 @@ TODO: Interaction with other aliases, scripts, hub, etc.
 
 TODO: Add note about automatically adding the `include.path`.
 
+## Development
+
+[git2 crate][gc]
+
+[gc]: https://github.com/alexcrichton/git2-rs
+
+### Running tests
+
+```bash
+cargo test
+./bats/integration.bats
+```
+
 ### TODO
 
 - [ ] useful output on `git with`

@@ -1,5 +1,7 @@
+use std::env;
 use std::path::PathBuf;
 use std::process::{Command, Output};
+use git2;
 use errors::*;
 
 pub trait Config {
@@ -16,10 +18,22 @@ pub fn root() -> Result<PathBuf> {
 }
 
 pub struct GitConfig {
-  pub namespace: String,
+  namespace: String,
+  config: git2::Config,
 }
 
 impl GitConfig {
+  pub fn new(namespace: &str) -> Result<GitConfig> {
+    let path = try!(env::current_dir().chain_err(|| ""));
+    let repo = try!(git2::Repository::discover(path).chain_err(|| ""));
+    let config = try!(repo.config().chain_err(|| ""));
+
+    Ok(GitConfig {
+      namespace: namespace.into(),
+      config: config,
+    })
+  }
+
   pub fn auto_include(&self) {
     let filename = format!(".{}", self.namespace);
     let include_path = format!("../{}", filename);

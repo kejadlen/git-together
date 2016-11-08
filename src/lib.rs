@@ -2,6 +2,7 @@
 #[macro_use]
 
 extern crate error_chain;
+extern crate git2;
 
 pub mod errors;
 pub mod git;

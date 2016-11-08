@@ -11,7 +11,7 @@ use git_together::git::GitConfig;
 
 fn main() {
   run(|| {
-    let config = GitConfig { namespace: "git-together".into() };
+    let config = try!(GitConfig::new("git-together"));
     config.auto_include();
 
     let gt = GitTogether { config: config };
