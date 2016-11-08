@@ -1,6 +1,6 @@
 use std::env;
 use std::process::{Command, Output};
-use git2::Repository;
+use git2;
 use errors::*;
 
 pub trait Config {
@@ -10,17 +10,20 @@ pub trait Config {
 
 pub struct GitConfig {
   namespace: String,
-  repo: Repository,
+  repo: git2::Repository,
+  config: git2::Config,
 }
 
 impl GitConfig {
   pub fn new(namespace: &str) -> Result<GitConfig> {
     let path = try!(env::current_dir().chain_err(|| ""));
-    let repo = try!(Repository::discover(path).chain_err(|| ""));
+    let repo = try!(git2::Repository::discover(path).chain_err(|| ""));
+    let config = try!(repo.config().chain_err(|| ""));
 
     Ok(GitConfig {
       namespace: namespace.into(),
       repo: repo,
+      config: config,
     })
   }
 
@@ -67,10 +70,7 @@ impl GitConfig {
 impl Config for GitConfig {
   fn get(&self, name: &str) -> Result<String> {
     let name = format!("{}.{}", self.namespace, name);
-    let output = try!(self.output(&[&name]));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
-    Ok(stdout.trim_right().into())
+    self.config.get_string(&name).chain_err(|| "")
   }
 
   fn set(&self, name: &str, value: &str) -> Result<()> {
