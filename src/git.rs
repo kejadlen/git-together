@@ -1,7 +1,6 @@
 use std::env;
-use std::path::PathBuf;
 use std::process::{Command, Output};
-use git2;
+use git2::Repository;
 use errors::*;
 
 pub trait Config {
@@ -9,28 +8,19 @@ pub trait Config {
   fn set(&self, name: &str, value: &str) -> Result<()>;
 }
 
-pub fn root() -> Result<PathBuf> {
-  let output =
-    try!(Command::new("git").args(&["rev-parse", "--show-toplevel"]).output());
-  let stdout = String::from_utf8_lossy(&output.stdout);
-
-  Ok(stdout.trim_right().into())
-}
-
 pub struct GitConfig {
   namespace: String,
-  config: git2::Config,
+  repo: Repository,
 }
 
 impl GitConfig {
   pub fn new(namespace: &str) -> Result<GitConfig> {
     let path = try!(env::current_dir().chain_err(|| ""));
-    let repo = try!(git2::Repository::discover(path).chain_err(|| ""));
-    let config = try!(repo.config().chain_err(|| ""));
+    let repo = try!(Repository::discover(path).chain_err(|| ""));
 
     Ok(GitConfig {
       namespace: namespace.into(),
-      config: config,
+      repo: repo,
     })
   }
 
@@ -39,9 +29,10 @@ impl GitConfig {
     let include_path = format!("../{}", filename);
 
     // Make sure .git-together exists
-    if let Ok(mut path) = root() {
-      path.push(&filename);
-      if !path.exists() {
+    if let Some(path) = self.repo.workdir() {
+      let mut path_buf = path.to_path_buf();
+      path_buf.push(&filename);
+      if !path_buf.exists() {
         return;
       }
     } else {
