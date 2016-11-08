@@ -75,7 +75,6 @@ impl Config for GitConfig {
 
   fn set(&mut self, name: &str, value: &str) -> Result<()> {
     let name = format!("{}.{}", self.namespace, name);
-
-    self.output(&[&name, value]).and(Ok(()))
+    self.config.set_str(&name, value).chain_err(|| "")
   }
 }
