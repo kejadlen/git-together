@@ -5,7 +5,7 @@ use errors::*;
 
 pub trait Config {
   fn get(&self, name: &str) -> Result<String>;
-  fn set(&self, name: &str, value: &str) -> Result<()>;
+  fn set(&mut self, name: &str, value: &str) -> Result<()>;
 }
 
 pub struct GitConfig {
@@ -73,7 +73,7 @@ impl Config for GitConfig {
     self.config.get_string(&name).chain_err(|| "")
   }
 
-  fn set(&self, name: &str, value: &str) -> Result<()> {
+  fn set(&mut self, name: &str, value: &str) -> Result<()> {
     let name = format!("{}.{}", self.namespace, name);
 
     self.output(&[&name, value]).and(Ok(()))

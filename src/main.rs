@@ -14,7 +14,7 @@ fn main() {
     let config = try!(GitConfig::new("git-together"));
     config.auto_include();
 
-    let gt = GitTogether { config: config };
+    let mut gt = GitTogether { config: config };
 
     let all_args: Vec<_> = env::args().skip(1).collect();
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();

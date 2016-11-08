@@ -23,7 +23,7 @@ pub struct GitTogether<C> {
 }
 
 impl<C: Config> GitTogether<C> {
-  pub fn set_active(&self, inits: &[&str]) -> Result<()> {
+  pub fn set_active(&mut self, inits: &[&str]) -> Result<()> {
     self.get_authors(inits)
       .and_then(|_| self.config.set("active", &inits.join("+")))
   }
@@ -59,7 +59,7 @@ impl<C: Config> GitTogether<C> {
       .map(|active| active.split('+').map(|s| s.into()).collect())
   }
 
-  pub fn rotate_active(&self) -> Result<()> {
+  pub fn rotate_active(&mut self) -> Result<()> {
     self.get_active().and_then(|active| {
       let mut inits: Vec<_> = active.iter().map(String::as_ref).collect();
       if !inits.is_empty() {
@@ -182,7 +182,7 @@ mod tests {
     let config = MockConfig::new(&[("domain", "rocinante.com"),
                                    ("authors.jh", "James Holden; jholden"),
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
-    let gt = GitTogether { config: config };
+    let mut gt = GitTogether { config: config };
 
     gt.set_active(&["jh"]).unwrap();
     assert_eq!(gt.get_active().unwrap(), vec!["jh"]);
@@ -197,7 +197,7 @@ mod tests {
                                    ("domain", "rocinante.com"),
                                    ("authors.jh", "James Holden; jholden"),
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
-    let gt = GitTogether { config: config };
+    let mut gt = GitTogether { config: config };
 
     gt.rotate_active().unwrap();
     assert_eq!(gt.get_active().unwrap(), vec!["nn", "jh"]);
@@ -225,7 +225,7 @@ mod tests {
         .ok_or(format!("name not found: '{}'", name).into())
     }
 
-    fn set(&self, name: &str, value: &str) -> Result<()> {
+    fn set(&mut self, name: &str, value: &str) -> Result<()> {
       self.data.borrow_mut().insert(name.into(), value.into());
       Ok(())
     }
