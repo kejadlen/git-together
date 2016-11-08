@@ -1,5 +1,7 @@
 # git-together
 
+[![Build Status](https://travis-ci.org/kejadlen/git-together.svg?branch=master)](https://travis-ci.org/kejadlen/git-together)
+
 Following in the footsteps of [git-pair][gp] and [git-duet][gd], but using `git
 config` to hold the authors and without needing to change your existing git
 habits.
