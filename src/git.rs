@@ -27,7 +27,7 @@ impl GitConfig {
     })
   }
 
-  pub fn auto_include(&self) {
+  pub fn auto_include(&mut self) {
     let filename = format!(".{}", self.namespace);
     let include_path = format!("../{}", filename);
 
@@ -42,28 +42,22 @@ impl GitConfig {
       return;
     }
 
-    // Make sure we're not already including .git-together
-    if let Ok(output) = self.output(&["--local", "--get-all", "include.path"]) {
-      let stdout = String::from_utf8_lossy(&output.stdout);
-      if stdout.split('\n').any(|x| x == include_path) {
-        return;
-      }
+    if self.already_included(&include_path).unwrap_or(true) {
+      return;
     }
 
-    let _ = self.output(&["--add", "include.path", &include_path]);
+    let _ = Command::new("git")
+      .args(&["config", "--add", "include.path", &include_path])
+      .status();
   }
 
-  fn output(&self, args: &[&str]) -> Result<Output> {
-    let output = try!(Command::new("git")
-      .arg("config")
-      .args(args)
-      .output());
-
-    if output.status.success() {
-      Ok(output)
-    } else {
-      Err(ErrorKind::GitConfig(output).into())
-    }
+  fn already_included(&self, include_path: &str) -> Result<bool> {
+    let local_config =
+      try!(self.config.open_level(git2::ConfigLevel::Local).chain_err(|| ""));
+    let entries = try!(local_config.entries(None).chain_err(|| ""));
+    Ok(IntoIterator::into_iter(&entries).any(|entry| {
+      entry.map(|entry| entry.value() == Some(include_path)).unwrap_or(true)
+    }))
   }
 }
 

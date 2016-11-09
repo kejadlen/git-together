@@ -11,7 +11,7 @@ use git_together::git::GitConfig;
 
 fn main() {
   run(|| {
-    let config = try!(GitConfig::new("git-together"));
+    let mut config = try!(GitConfig::new("git-together"));
     config.auto_include();
 
     let mut gt = GitTogether { config: config };
