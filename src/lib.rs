@@ -23,9 +23,10 @@ pub struct GitTogether<C> {
 }
 
 impl<C: Config> GitTogether<C> {
-  pub fn set_active(&mut self, inits: &[&str]) -> Result<()> {
-    self.get_authors(inits)
-      .and_then(|_| self.config.set("active", &inits.join("+")))
+  pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
+    let authors = try!(self.get_authors(inits));
+    try!(self.config.set("active", &inits.join("+")));
+    Ok(authors)
   }
 
   pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
@@ -66,7 +67,7 @@ impl<C: Config> GitTogether<C> {
         let author = inits.remove(0);
         inits.push(author);
       }
-      self.set_active(&inits[..])
+      self.set_active(&inits[..]).map(|_| ())
     })
   }
 
