@@ -1,5 +1,5 @@
 use std::env;
-use std::process::{Command, Output};
+use std::process::Command;
 use git2;
 use errors::*;
 
@@ -30,15 +30,14 @@ impl GitConfig {
   pub fn auto_include(&mut self) {
     let filename = format!(".{}", self.namespace);
     let include_path = format!("../{}", filename);
-
-    // Make sure .git-together exists
-    if let Some(path) = self.repo.workdir() {
+    let file_exists = self.repo.workdir().map(|path| {
       let mut path_buf = path.to_path_buf();
       path_buf.push(&filename);
-      if !path_buf.exists() {
-        return;
-      }
-    } else {
+      path_buf.exists()
+    });
+
+    // Make sure .git-together exists
+    if !file_exists.unwrap_or(false) {
       return;
     }
 
@@ -46,6 +45,7 @@ impl GitConfig {
       return;
     }
 
+    // TODO Figure out how to do this using git2
     let _ = Command::new("git")
       .args(&["config", "--add", "include.path", &include_path])
       .status();
