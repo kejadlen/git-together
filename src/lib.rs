@@ -129,7 +129,6 @@ impl<C: Config> GitTogether<C> {
 mod tests {
   use super::*;
 
-  use std::cell::RefCell;
   use std::collections::HashMap;
 
   use errors::*;
@@ -212,29 +211,27 @@ mod tests {
   }
 
   struct MockConfig {
-    data: RefCell<HashMap<String, String>>,
+    data: HashMap<String, String>,
   }
 
   impl MockConfig {
     fn new(data: &[(&str, &str)]) -> MockConfig {
-      let data = data.iter()
-        .map(|&(k, v)| (k.into(), v.into()))
-        .collect();
-      MockConfig { data: RefCell::new(data) }
+      MockConfig {
+        data: data.iter().map(|&(k, v)| (k.into(), v.into())).collect(),
+      }
     }
   }
 
   impl Config for MockConfig {
     fn get(&self, name: &str) -> Result<String> {
       self.data
-        .borrow()
         .get(name.into())
         .cloned()
         .ok_or(format!("name not found: '{}'", name).into())
     }
 
     fn set(&mut self, name: &str, value: &str) -> Result<()> {
-      self.data.borrow_mut().insert(name.into(), value.into());
+      self.data.insert(name.into(), value.into());
       Ok(())
     }
   }
