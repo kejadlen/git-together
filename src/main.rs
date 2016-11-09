@@ -21,7 +21,10 @@ fn main() {
 
     match args.as_slice() {
       &["with", ref inits..] => {
-        try!(gt.set_active(inits));
+        let authors = try!(gt.set_active(inits));
+        for author in authors {
+          println!("{}", author);
+        }
       }
       &[sub_cmd, ref rest..] if ["commit"].contains(&sub_cmd) => {
         let mut git_cmd = Command::new("git");

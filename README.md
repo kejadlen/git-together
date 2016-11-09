@@ -85,7 +85,6 @@ cargo test
 
 ### TODO
 
-- [ ] useful output on `git with`
 - [ ] clear active authors on bare `git with`
 - [ ] show all authors on bare `git with`
 - [ ] `merge`, `revert`
