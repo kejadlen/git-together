@@ -1,6 +1,8 @@
 language: rust
 rust:
   - nightly
+dist: trusty
+sudo: required
 install:
   - git clone https://github.com/sstephenson/bats.git /tmp/bats && /tmp/bats/install.sh $HOME
 script:
