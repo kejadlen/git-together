@@ -128,6 +128,26 @@ AUTHORS
   [[ ! "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
 }
 
+@test "merging" {
+  git-together with jh nn
+  touch foo
+  git add foo
+  git-together commit -m "add foo"
+
+  git checkout -b bar
+  touch bar
+  git add bar
+  git-together commit -m "add bar"
+
+  git checkout -
+  git-together merge --no-edit --no-ff bar
+
+  run git show --no-patch --format="%aN <%aE>"
+  [ "$output" = "James Holden <jholden@rocinante.com>" ]
+  run git show --no-patch --format="%cN <%cE>"
+  [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+}
+
 setup() {
   # [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
   rm -rf $BATS_TMPDIR/bin

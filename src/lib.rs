@@ -69,8 +69,8 @@ impl<C: Config> GitTogether<C> {
       .env("GIT_COMMITTER_NAME", committer.name.clone())
       .env("GIT_COMMITTER_EMAIL", committer.email.clone());
 
-    let should_signoff = !env::var("GIT_TOGETHER_NO_SIGNOFF").is_ok();
-    let cmd = if should_signoff && author != committer {
+    let no_signoff = env::var("GIT_TOGETHER_NO_SIGNOFF").is_ok();
+    let cmd = if !no_signoff && author != committer {
       cmd.arg("--signoff")
     } else {
       cmd

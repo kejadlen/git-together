@@ -24,7 +24,7 @@ fn main() {
         try!(gt.set_active(&[]));
         let authors = try!(gt.all_authors());
         let mut sorted: Vec<_> = authors.iter().collect();
-        sorted.sort_by(|a,b| a.0.cmp(b.0));
+        sorted.sort_by(|a, b| a.0.cmp(b.0));
 
         for (initials, author) in sorted {
           println!("{}: {}", initials, author);
@@ -36,11 +36,15 @@ fn main() {
           println!("{}", author);
         }
       }
-      &[sub_cmd, ref rest..] if ["commit"].contains(&sub_cmd) => {
-        let mut git_cmd = Command::new("git");
-        let cmd = git_cmd.arg(sub_cmd).args(rest);
-        let signoff = try!(gt.signoff(cmd));
+      &[sub_cmd, ref rest..] if ["commit", "merge"].contains(&sub_cmd) => {
+        if sub_cmd != "commit" {
+          env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
+        }
 
+        let mut cmd = Command::new("git");
+        let cmd = cmd.arg(sub_cmd).args(rest);
+
+        let signoff = try!(gt.signoff(cmd));
         let status = try!(signoff.status().chain_err(|| ""));
         if status.success() {
           try!(gt.rotate_active());
