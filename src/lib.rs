@@ -56,15 +56,25 @@ impl<C: Config> GitTogether<C> {
     let authors = try!(self.get_authors(&inits));
 
     let (author, committer) = match authors.as_slice() {
-      &[] => { return Err("".into()); },
+      &[] => {
+        return Err("".into());
+      }
       &[ref solo] => (solo, solo),
-      &[ref author, ref committer, ..] => (author, committer),
+      &[ref author, ref committer, _..] => (author, committer),
     };
 
-    Ok(cmd.env("GIT_AUTHOR_NAME", author.name.clone())
-          .env("GIT_AUTHOR_EMAIL", author.email.clone())
-          .env("GIT_COMMITTER_NAME", committer.name.clone())
-          .env("GIT_COMMITTER_EMAIL", committer.email.clone()))
+    let cmd = cmd.env("GIT_AUTHOR_NAME", author.name.clone())
+      .env("GIT_AUTHOR_EMAIL", author.email.clone())
+      .env("GIT_COMMITTER_NAME", committer.name.clone())
+      .env("GIT_COMMITTER_EMAIL", committer.email.clone());
+
+    let cmd = if author != committer {
+      cmd.arg("--signoff")
+    } else {
+      cmd
+    };
+
+    Ok(cmd)
   }
 
   fn get_active(&self) -> Result<Vec<String>> {

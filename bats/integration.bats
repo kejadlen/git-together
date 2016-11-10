@@ -8,6 +8,8 @@
 
   run git show --no-patch --format="%aN <%aE>"
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
+  run git show --format=%B --no-patch
+  [[ ! "$output" =~ "Signed-off-by:" ]]
 }
 
 @test "pairing" {
@@ -20,6 +22,8 @@
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+  run git show --format=%B --no-patch
+  [[ "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
 }
 
 @test "rotation" {
@@ -37,6 +41,8 @@
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
+  run git show --format=%B --no-patch
+  [[ "$output" =~ "Signed-off-by: James Holden <jholden@rocinante.com>" ]]
 }
 
 @test "mobbing" {
@@ -50,6 +56,8 @@
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+  run git show --format=%B --no-patch
+  [[ "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
 
   touch bar
   git add bar
@@ -59,6 +67,8 @@
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "Chrisjen Avasarala <avasarala@un.gov>" ]
+  run git show --format=%B --no-patch
+  [[ "$output" =~ "Signed-off-by: Chrisjen Avasarala <avasarala@un.gov>" ]]
 
   touch baz
   git add baz
@@ -68,6 +78,8 @@
   [ "$output" = "Chrisjen Avasarala <avasarala@un.gov>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
+  run git show --format=%B --no-patch
+  [[ "$output" =~ "Signed-off-by: James Holden <jholden@rocinante.com>" ]]
 }
 
 @test "auto-including .git-together" {
