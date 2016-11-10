@@ -49,6 +49,10 @@ Soloing and mobbing are set by simply passing in the right number of authors to
 so that the author/committer roles are fairly spread across the pair/mob over
 time.
 
+### Known Issues
+
+TODO: Doesn't work with aliases
+
 ### Technical Details
 
 Under the hood, `git-together` will only act on the following `git` subcommands:
