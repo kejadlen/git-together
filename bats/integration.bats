@@ -114,6 +114,20 @@ AUTHORS
   [ "$output" = "" ]
 }
 
+@test "no signoff" {
+  git-together with jh nn
+  touch foo
+  git add foo
+  GIT_TOGETHER_NO_SIGNOFF=1 git-together commit -m "add foo"
+
+  run git show --no-patch --format="%aN <%aE>"
+  [ "$output" = "James Holden <jholden@rocinante.com>" ]
+  run git show --no-patch --format="%cN <%cE>"
+  [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+  run git show --format=%B --no-patch
+  [[ ! "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
+}
+
 setup() {
   # [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
   rm -rf $BATS_TMPDIR/bin

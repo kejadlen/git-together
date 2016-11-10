@@ -9,6 +9,7 @@ pub mod errors;
 pub mod git;
 
 use std::collections::HashMap;
+use std::env;
 use std::fmt;
 use std::process::Command;
 
@@ -68,7 +69,8 @@ impl<C: Config> GitTogether<C> {
       .env("GIT_COMMITTER_NAME", committer.name.clone())
       .env("GIT_COMMITTER_EMAIL", committer.email.clone());
 
-    let cmd = if author != committer {
+    let should_signoff = !env::var("GIT_TOGETHER_NO_SIGNOFF").is_ok();
+    let cmd = if should_signoff && author != committer {
       cmd.arg("--signoff")
     } else {
       cmd
