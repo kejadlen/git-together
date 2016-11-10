@@ -7,6 +7,7 @@ extern crate git2;
 pub mod errors;
 pub mod git;
 
+use std::collections::HashMap;
 use std::fmt;
 use std::process::Command;
 
@@ -33,6 +34,18 @@ impl<C: Config> GitTogether<C> {
   pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
     let authors = try!(self.get_authors(inits));
     try!(self.config.set("active", &inits.join("+")));
+    Ok(authors)
+  }
+
+  pub fn all_authors(&self) -> Result<HashMap<String, Author>> {
+    let mut authors = HashMap::new();
+    let domain = try!(self.config.get("domain"));
+    let raw = try!(self.config.get_all("authors."));
+    for (name, value) in raw {
+      let initials = try!(name.split('.').last().ok_or(""));
+      let author = try!(Self::author(&domain, &value));
+      authors.insert(initials.into(), author);
+    }
     Ok(authors)
   }
 
@@ -210,6 +223,35 @@ mod tests {
     assert_eq!(gt.get_active().unwrap(), vec!["nn", "jh"]);
   }
 
+  #[test]
+  fn all_authors() {
+    let config =
+      MockConfig::new(&[("active", "jh+nn"),
+                        ("domain", "rocinante.com"),
+                        ("authors.ab", "Amos Burton; aburton"),
+                        ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
+                        ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
+    let gt = GitTogether { config: config };
+
+    let all_authors = gt.all_authors().unwrap();
+    assert_eq!(all_authors.len(), 3);
+    assert_eq!(all_authors["ab"],
+               Author {
+                 name: "Amos Burton".into(),
+                 email: "aburton@rocinante.com".into(),
+               });
+    assert_eq!(all_authors["bd"],
+               Author {
+                 name: "Bobbie Draper".into(),
+                 email: "bdraper@mars.mil".into(),
+               });
+    assert_eq!(all_authors["jm"],
+               Author {
+                 name: "Joe Miller".into(),
+                 email: "jmiller@starhelix.com".into(),
+               });
+  }
+
   struct MockConfig {
     data: HashMap<String, String>,
   }
@@ -228,6 +270,14 @@ mod tests {
         .get(name.into())
         .cloned()
         .ok_or(format!("name not found: '{}'", name).into())
+    }
+
+    fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
+      Ok(self.data
+        .iter()
+        .filter(|&(name, _)| name.contains(glob))
+        .map(|(name, value)| (name.clone(), value.clone()))
+        .collect())
     }
 
     fn set(&mut self, name: &str, value: &str) -> Result<()> {

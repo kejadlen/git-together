@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::process::Command;
 use git2;
@@ -5,6 +6,7 @@ use errors::*;
 
 pub trait Config {
   fn get(&self, name: &str) -> Result<String>;
+  fn get_all(&self, glob: &str) -> Result<HashMap<String, String>>;
   fn set(&mut self, name: &str, value: &str) -> Result<()>;
 }
 
@@ -65,6 +67,18 @@ impl Config for GitConfig {
   fn get(&self, name: &str) -> Result<String> {
     let name = format!("{}.{}", self.namespace, name);
     self.config.get_string(&name).chain_err(|| "")
+  }
+
+  fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
+    let mut result = HashMap::new();
+    let entries = try!(self.config.entries(Some(glob)).chain_err(|| ""));
+    for entry in &entries {
+      let entry = try!(entry.chain_err(|| ""));
+      if let (Some(name), Some(value)) = (entry.name(), entry.value()) {
+        result.insert(name.into(), value.into());
+      }
+    }
+    Ok(result)
   }
 
   fn set(&mut self, name: &str, value: &str) -> Result<()> {

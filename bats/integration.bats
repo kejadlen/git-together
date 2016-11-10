@@ -86,6 +86,22 @@
   [ "$output" = "../.git-together" ]
 }
 
+@test "git with no-one" {
+  git-together with jh
+
+  run git-together with
+  expected=$(cat <<AUTHORS
+ca: Chrisjen Avasarala <avasarala@un.gov>
+jh: James Holden <jholden@rocinante.com>
+nn: Naomi Nagata <nnagata@rocinante.com>
+AUTHORS
+)
+  [ "$output" = "$expected" ]
+
+  run git config git-together.active
+  [ "$output" = "" ]
+}
+
 setup() {
   # [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
   rm -rf $BATS_TMPDIR/bin

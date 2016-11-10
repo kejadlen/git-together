@@ -20,6 +20,16 @@ fn main() {
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
     match args.as_slice() {
+      &["with"] => {
+        try!(gt.set_active(&[]));
+        let authors = try!(gt.all_authors());
+        let mut sorted: Vec<_> = authors.iter().collect();
+        sorted.sort_by(|a,b| a.0.cmp(b.0));
+
+        for (initials, author) in sorted {
+          println!("{}: {}", initials, author);
+        }
+      }
       &["with", ref inits..] => {
         let authors = try!(gt.set_active(inits));
         for author in authors {
@@ -53,4 +63,3 @@ fn run<F>(f: F)
     std::process::exit(1);
   }
 }
-
