@@ -117,9 +117,4 @@ setup() {
   git config --add git-together.authors.jh "James Holden; jholden"
   git config --add git-together.authors.nn "Naomi Nagata; nnagata"
   git config --add git-together.authors.ca "Chrisjen Avasarala; avasarala@un.gov"
-
-  # only here since git on Travis complains when
-  # there's no user/email in the git config
-  git config --add user.name "John Doe"
-  git config --add user.email "john.doe@gmail.com"
 }
