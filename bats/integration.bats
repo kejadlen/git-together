@@ -8,7 +8,7 @@
 
   run git show --no-patch --format="%aN <%aE>"
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
-  run git show --format=%B --no-patch
+  run git show --no-patch --format=%B
   [[ ! "$output" =~ "Signed-off-by:" ]]
 }
 
@@ -22,7 +22,7 @@
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
-  run git show --format=%B --no-patch
+  run git show --no-patch --format=%B
   [[ "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
 }
 
@@ -41,7 +41,7 @@
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
-  run git show --format=%B --no-patch
+  run git show --no-patch --format=%B
   [[ "$output" =~ "Signed-off-by: James Holden <jholden@rocinante.com>" ]]
 }
 
@@ -56,7 +56,7 @@
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
-  run git show --format=%B --no-patch
+  run git show --no-patch --format=%B
   [[ "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
 
   touch bar
@@ -67,7 +67,7 @@
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "Chrisjen Avasarala <avasarala@un.gov>" ]
-  run git show --format=%B --no-patch
+  run git show --no-patch --format=%B
   [[ "$output" =~ "Signed-off-by: Chrisjen Avasarala <avasarala@un.gov>" ]]
 
   touch baz
@@ -78,7 +78,7 @@
   [ "$output" = "Chrisjen Avasarala <avasarala@un.gov>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
-  run git show --format=%B --no-patch
+  run git show --no-patch --format=%B
   [[ "$output" =~ "Signed-off-by: James Holden <jholden@rocinante.com>" ]]
 }
 
@@ -124,7 +124,7 @@ AUTHORS
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
-  run git show --format=%B --no-patch
+  run git show --no-patch --format=%B
   [[ ! "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
 }
 
@@ -146,6 +146,23 @@ AUTHORS
   [ "$output" = "James Holden <jholden@rocinante.com>" ]
   run git show --no-patch --format="%cN <%cE>"
   [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+  run git show --no-patch --format=%B
+  [[ ! "$output" =~ "Signed-off-by:" ]]
+}
+
+@test "reverting" {
+  git-together with jh nn
+  touch foo
+  git add foo
+  git-together commit -m "add foo"
+  git-together revert --no-edit HEAD
+
+  run git show --no-patch --format="%aN <%aE>"
+  [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+  run git show --no-patch --format="%cN <%cE>"
+  [ "$output" = "James Holden <jholden@rocinante.com>" ]
+  run git show --no-patch --format=%B
+  [[ "$output" =~ "Signed-off-by: James Holden <jholden@rocinante.com>" ]]
 }
 
 setup() {

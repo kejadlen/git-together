@@ -36,8 +36,8 @@ fn main() {
           println!("{}", author);
         }
       }
-      &[sub_cmd, ref rest..] if ["commit", "merge"].contains(&sub_cmd) => {
-        if sub_cmd != "commit" {
+      &[sub_cmd, ref rest..] if ["commit", "merge", "revert"].contains(&sub_cmd) => {
+        if sub_cmd == "merge" {
           env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
         }
 
