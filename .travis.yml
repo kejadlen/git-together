@@ -15,7 +15,9 @@ install:
 script:
 - cargo test --verbose
 - ~/bin/bats --tap bats
+
 # before_deploy:
+# - rustup target add $TARGET
 # - cargo build --release --target $TARGET
 # deploy:
 # - provider: releases
