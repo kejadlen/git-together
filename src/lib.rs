@@ -14,7 +14,7 @@ use std::fmt;
 use std::process::Command;
 
 use errors::*;
-use git::Config;
+use git::{Config, GitConfig};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Author {
@@ -30,6 +30,15 @@ impl fmt::Display for Author {
 
 pub struct GitTogether<C> {
   pub config: C,
+}
+
+impl GitTogether<GitConfig> {
+  pub fn new() -> Result<GitTogether<GitConfig>> {
+    let mut config = try!(GitConfig::new("git-together"));
+    config.auto_include();
+
+    Ok(GitTogether { config: config })
+  }
 }
 
 impl<C: Config> GitTogether<C> {

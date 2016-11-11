@@ -7,20 +7,16 @@ use std::process::Command;
 
 use git_together::GitTogether;
 use git_together::errors::*;
-use git_together::git::GitConfig;
 
 fn main() {
   run(|| {
-    let mut config = try!(GitConfig::new("git-together"));
-    config.auto_include();
-
-    let mut gt = GitTogether { config: config };
-
     let all_args: Vec<_> = env::args().skip(1).collect();
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
     match args.as_slice() {
       &["with"] => {
+        let mut gt = try!(GitTogether::new());
+
         try!(gt.set_active(&[]));
         let authors = try!(gt.all_authors());
         let mut sorted: Vec<_> = authors.iter().collect();
@@ -31,12 +27,16 @@ fn main() {
         }
       }
       &["with", ref inits..] => {
+        let mut gt = try!(GitTogether::new());
+
         let authors = try!(gt.set_active(inits));
         for author in authors {
           println!("{}", author);
         }
       }
       &[sub_cmd, ref rest..] if ["commit", "merge", "revert"].contains(&sub_cmd) => {
+        let mut gt = try!(GitTogether::new());
+
         if sub_cmd == "merge" {
           env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
         }
