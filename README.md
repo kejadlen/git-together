@@ -89,6 +89,4 @@ cargo test
 
 ### TODO
 
-- [ ] `merge`, `revert`
-- [ ] `rebase`
-- [ ] initials in bash prompt
+- Figure out what to do when `rebase`ing.
