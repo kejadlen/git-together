@@ -1,6 +1,7 @@
 language: rust
 rust:
 - nightly
+cache: cargo
 dist: trusty
 sudo: required
 install:
