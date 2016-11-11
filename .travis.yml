@@ -8,3 +8,13 @@ install:
 script:
   - cargo test --verbose
   - ~/bin/bats --tap bats
+before_deploy:
+  - rustup target install x86_64-apple-darwin
+  - cargo build --release --target x86_64-apple-darwin
+deploy:
+  - provider: releases
+    api_key: d50d8875ae5d95901eb2330fe88f88ce589fd280
+    file: target/release/git-together
+    skip_cleanup: true
+    on:
+      tags: true
