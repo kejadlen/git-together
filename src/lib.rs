@@ -23,14 +23,8 @@ pub struct GitTogether<C> {
 }
 
 impl GitTogether<GitConfig> {
-  pub fn new() -> Result<GitTogether<GitConfig>> {
-    let mut config = try!(GitConfig::new("git-together"));
-    config.auto_include();
-
-    let domain = try!(config.get("domain"));
-    let author_parser = AuthorParser { domain: domain };
-
-    Ok(GitTogether { config: config, author_parser: author_parser })
+  pub fn new(config: GitConfig, author_parser: AuthorParser) -> GitTogether<GitConfig> {
+    GitTogether { config: config, author_parser: author_parser }
   }
 }
 
