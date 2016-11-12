@@ -5,28 +5,17 @@
 extern crate error_chain;
 extern crate git2;
 
+pub mod author;
 pub mod errors;
 pub mod git;
 
 use std::collections::HashMap;
 use std::env;
-use std::fmt;
 use std::process::Command;
 
+use author::Author;
 use errors::*;
 use git::{Config, GitConfig};
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Author {
-  pub name: String,
-  pub email: String,
-}
-
-impl fmt::Display for Author {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{} <{}>", self.name, self.email)
-  }
-}
 
 pub struct GitTogether<C> {
   pub config: C,
@@ -158,6 +147,7 @@ mod tests {
 
   use std::collections::HashMap;
 
+  use author::Author;
   use errors::*;
   use git::Config;
 
