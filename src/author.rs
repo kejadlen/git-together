@@ -6,23 +6,27 @@ pub struct Author {
   pub email: String,
 }
 
-pub struct AuthorFactory {
+pub struct AuthorParser {
   pub domain: String,
 }
 
-impl AuthorFactory {
+impl AuthorParser {
   // NOTE This doesn't check domain at all.
   pub fn parse(&self, raw: &str) -> Option<Author> {
     let mut split = raw.split(';').map(str::trim);
 
     let name = match split.next() {
       Some(name) if !name.is_empty() => name,
-      _ => { return None; },
+      _ => {
+        return None;
+      }
     };
 
     let email_seed = match split.next() {
       Some(email_seed) if !email_seed.is_empty() => email_seed,
-      _ => { return None; },
+      _ => {
+        return None;
+      }
     };
 
     let email = if email_seed.contains('@') {
@@ -50,22 +54,22 @@ mod tests {
 
   #[test]
   fn new() {
-    let author_factory = AuthorFactory { domain: "example.com".into() };
+    let author_parser = AuthorParser { domain: "example.com".into() };
 
-    let author = author_factory.parse("Jane Doe; jdoe").unwrap();
+    let author = author_parser.parse("Jane Doe; jdoe").unwrap();
     assert_eq!(author.name, "Jane Doe");
     assert_eq!(author.email, "jdoe@example.com");
 
-    let author = author_factory.parse("");
+    let author = author_parser.parse("");
     assert!(author.is_none());
 
-    let author = author_factory.parse("Jane Doe");
+    let author = author_parser.parse("Jane Doe");
     assert!(author.is_none());
 
-    let author = author_factory.parse("Jane Doe; ");
+    let author = author_parser.parse("Jane Doe; ");
     assert!(author.is_none());
 
-    let author = author_factory.parse("Jane Doe; jane.doe@example.edu").unwrap();
+    let author = author_parser.parse("Jane Doe; jane.doe@example.edu").unwrap();
     assert_eq!(author.name, "Jane Doe");
     assert_eq!(author.email, "jane.doe@example.edu");
   }

@@ -13,12 +13,13 @@ use std::collections::HashMap;
 use std::env;
 use std::process::Command;
 
-use author::Author;
+use author::{Author, AuthorParser};
 use errors::*;
 use git::{Config, GitConfig};
 
 pub struct GitTogether<C> {
-  pub config: C,
+  config: C,
+  author_parser: AuthorParser,
 }
 
 impl GitTogether<GitConfig> {
@@ -26,7 +27,10 @@ impl GitTogether<GitConfig> {
     let mut config = try!(GitConfig::new("git-together"));
     config.auto_include();
 
-    Ok(GitTogether { config: config })
+    let domain = try!(config.get("domain"));
+    let author_parser = AuthorParser { domain: domain };
+
+    Ok(GitTogether { config: config, author_parser: author_parser })
   }
 }
 
@@ -39,11 +43,10 @@ impl<C: Config> GitTogether<C> {
 
   pub fn all_authors(&self) -> Result<HashMap<String, Author>> {
     let mut authors = HashMap::new();
-    let domain = try!(self.config.get("domain"));
     let raw = try!(self.config.get_all("authors."));
     for (name, value) in raw {
       let initials = try!(name.split('.').last().ok_or(""));
-      let author = try!(Self::author(&domain, &value));
+      let author = try!(self.parse_author(initials, &value));
       authors.insert(initials.into(), author);
     }
     Ok(authors)
@@ -95,49 +98,22 @@ impl<C: Config> GitTogether<C> {
   }
 
   fn get_authors(&self, inits: &[&str]) -> Result<Vec<Author>> {
-    let domain = try!(self.config.get("domain"));
     inits.iter()
-      .map(|&init| {
-        self.config
-          .get(&format!("authors.{}", init))
-          .chain_err(|| ErrorKind::AuthorNotFound(init.into()))
-          .and_then(|raw| {
-            if raw.is_empty() {
-              return Err(ErrorKind::InvalidAuthor(raw).into());
-            }
-
-            Self::author(&domain, &raw)
-          })
-      })
+      .map(|&initials| self.get_author(initials))
       .collect()
   }
 
-  fn author(domain: &str, raw: &str) -> Result<Author> {
-    let split: Vec<_> = raw.split(';').collect();
-    if split.len() < 2 {
-      return Err(ErrorKind::InvalidAuthor(raw.into()).into());
-    }
+  fn get_author(&self, initials: &str) -> Result<Author> {
+    self.config
+      .get(&format!("authors.{}", initials))
+      .chain_err(|| ErrorKind::AuthorNotFound(initials.into()))
+      .and_then(|raw| self.parse_author(initials, &raw))
+  }
 
-    let name = split[0].trim().to_string();
-    if name.is_empty() {
-      return Err(ErrorKind::InvalidAuthor(raw.into()).into());
-    }
-
-    let email_seed = split[1].trim();
-    if email_seed.is_empty() {
-      return Err(ErrorKind::InvalidAuthor(raw.into()).into());
-    }
-
-    let email = if email_seed.contains('@') {
-      email_seed.into()
-    } else {
-      format!("{}@{}", email_seed, domain)
-    };
-
-    Ok(Author {
-      name: name,
-      email: email,
-    })
+  fn parse_author(&self, initials: &str, raw: &str) -> Result<Author> {
+    self.author_parser
+      .parse(&raw)
+      .ok_or(ErrorKind::InvalidAuthor(initials.into(), raw.into()).into())
   }
 }
 
@@ -147,30 +123,25 @@ mod tests {
 
   use std::collections::HashMap;
 
-  use author::Author;
+  use author::{Author, AuthorParser};
   use errors::*;
   use git::Config;
 
   #[test]
-  fn get_authors_no_domain() {
-    let config = MockConfig::new(&[("authors.jh", "James Holden; jholden")]);
-    let gt = GitTogether { config: config };
-
-    assert!(gt.get_authors(&["jh"]).is_err());
-  }
-
-  #[test]
   fn get_authors() {
     let config =
-      MockConfig::new(&[("domain", "rocinante.com"),
-                        ("authors.jh", ""),
+      MockConfig::new(&[("authors.jh", ""),
                         ("authors.nn", "Naomi Nagata"),
                         ("authors.ab", "Amos Burton; aburton"),
                         ("authors.ak", "Alex Kamal; akamal"),
                         ("authors.ca", "Chrisjen Avasarala;"),
                         ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
                         ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
-    let gt = GitTogether { config: config };
+    let author_parser = AuthorParser { domain: "rocinante.com".into() };
+    let gt = GitTogether {
+      config: config,
+      author_parser: author_parser,
+    };
 
     assert!(gt.get_authors(&["jh"]).is_err());
     assert!(gt.get_authors(&["nn"]).is_err());
@@ -203,10 +174,13 @@ mod tests {
 
   #[test]
   fn set_active() {
-    let config = MockConfig::new(&[("domain", "rocinante.com"),
-                                   ("authors.jh", "James Holden; jholden"),
+    let config = MockConfig::new(&[("authors.jh", "James Holden; jholden"),
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
-    let mut gt = GitTogether { config: config };
+    let author_parser = AuthorParser { domain: "rocinante.com".into() };
+    let mut gt = GitTogether {
+      config: config,
+      author_parser: author_parser,
+    };
 
     gt.set_active(&["jh"]).unwrap();
     assert_eq!(gt.get_active().unwrap(), vec!["jh"]);
@@ -218,10 +192,13 @@ mod tests {
   #[test]
   fn rotate_active() {
     let config = MockConfig::new(&[("active", "jh+nn"),
-                                   ("domain", "rocinante.com"),
                                    ("authors.jh", "James Holden; jholden"),
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
-    let mut gt = GitTogether { config: config };
+    let author_parser = AuthorParser { domain: "rocinante.com".into() };
+    let mut gt = GitTogether {
+      config: config,
+      author_parser: author_parser,
+    };
 
     gt.rotate_active().unwrap();
     assert_eq!(gt.get_active().unwrap(), vec!["nn", "jh"]);
@@ -231,11 +208,14 @@ mod tests {
   fn all_authors() {
     let config =
       MockConfig::new(&[("active", "jh+nn"),
-                        ("domain", "rocinante.com"),
                         ("authors.ab", "Amos Burton; aburton"),
                         ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
                         ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
-    let gt = GitTogether { config: config };
+    let author_parser = AuthorParser { domain: "rocinante.com".into() };
+    let gt = GitTogether {
+      config: config,
+      author_parser: author_parser,
+    };
 
     let all_authors = gt.all_authors().unwrap();
     assert_eq!(all_authors.len(), 3);

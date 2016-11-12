@@ -6,13 +6,13 @@ error_chain! {
   }
 
   errors {
-    AuthorNotFound(init: String) {
+    AuthorNotFound(initials: String) {
       description("author not found")
-      display("author not found: '{}'", init)
+      display("author not found: '{}'", initials)
     }
-    InvalidAuthor(raw: String) {
+    InvalidAuthor(initials: String, raw: String) {
       description("invalid author")
-      display("invalid author: '{}'", raw)
+      display("invalid author for '{}': '{}'", initials, raw)
     }
   }
 }
