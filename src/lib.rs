@@ -100,14 +100,14 @@ impl<C: Config> GitTogether<C> {
   fn get_author(&self, initials: &str) -> Result<Author> {
     self.config
       .get(&format!("authors.{}", initials))
-      .chain_err(|| ErrorKind::AuthorNotFound(initials.into()))
+      .chain_err(|| format!("author not found for '{}'", initials))
       .and_then(|raw| self.parse_author(initials, &raw))
   }
 
   fn parse_author(&self, initials: &str, raw: &str) -> Result<Author> {
     self.author_parser
       .parse(&raw)
-      .ok_or(ErrorKind::InvalidAuthor(initials.into(), raw.into()).into())
+      .ok_or(format!("invalid author for '{}': '{}'", initials, raw).into())
   }
 }
 

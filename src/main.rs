@@ -48,13 +48,17 @@ fn main() {
         let cmd = cmd.arg(sub_cmd).args(rest);
 
         let signoff = try!(gt.signoff(cmd));
-        let status = try!(signoff.status().chain_err(|| ""));
+        let status = try!(signoff.status()
+          .chain_err(|| "failed to execute process"));
         if status.success() {
           try!(gt.rotate_active());
         }
       }
       args => {
-        try!(Command::new("git").args(args).status().chain_err(|| ""));
+        try!(Command::new("git")
+          .args(args)
+          .status()
+          .chain_err(|| "failed to execute process"));
       }
     };
 
@@ -75,8 +79,10 @@ fn git_together() -> Result<GitTogether<GitConfig>> {
 fn run<F>(f: F)
   where F: Fn() -> Result<()>
 {
-  if let Err(e) = f() {
-    println!("{}", e);
+  if let Err(error) = f() {
+    for error in error.iter() {
+      println!("{}", error);
+    }
     std::process::exit(1);
   }
 }

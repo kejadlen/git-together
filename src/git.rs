@@ -18,9 +18,11 @@ pub struct GitConfig {
 
 impl GitConfig {
   pub fn new(namespace: &str) -> Result<GitConfig> {
-    let path = try!(env::current_dir().chain_err(|| ""));
-    let repo = try!(git2::Repository::discover(path).chain_err(|| ""));
-    let config = try!(repo.config().chain_err(|| ""));
+    let path = try!(env::current_dir()
+      .chain_err(|| "error getting current directory"));
+    let repo = try!(git2::Repository::discover(path)
+      .chain_err(|| "error discovering git repo"));
+    let config = try!(repo.config().chain_err(|| "error getting git config"));
 
     Ok(GitConfig {
       namespace: namespace.into(),
@@ -54,9 +56,11 @@ impl GitConfig {
   }
 
   fn already_included(&self, include_path: &str) -> Result<bool> {
-    let local_config =
-      try!(self.config.open_level(git2::ConfigLevel::Local).chain_err(|| ""));
-    let entries = try!(local_config.entries(None).chain_err(|| ""));
+    let local_config = try!(self.config
+      .open_level(git2::ConfigLevel::Local)
+      .chain_err(|| "error opening local git config"));
+    let entries = try!(local_config.entries(None)
+      .chain_err(|| "error getting git config entries"));
     Ok(IntoIterator::into_iter(&entries).any(|entry| {
       entry.map(|entry| entry.value() == Some(include_path)).unwrap_or(true)
     }))
@@ -66,14 +70,16 @@ impl GitConfig {
 impl Config for GitConfig {
   fn get(&self, name: &str) -> Result<String> {
     let name = format!("{}.{}", self.namespace, name);
-    self.config.get_string(&name).chain_err(|| "")
+    self.config.get_string(&name).chain_err(|| "error getting git config")
   }
 
   fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
-    let entries = try!(self.config.entries(Some(glob)).chain_err(|| ""));
+    let entries = try!(self.config
+      .entries(Some(glob))
+      .chain_err(|| "error getting git config entries"));
     for entry in &entries {
-      let entry = try!(entry.chain_err(|| ""));
+      let entry = try!(entry.chain_err(|| "error getting git config entry"));
       if let (Some(name), Some(value)) = (entry.name(), entry.value()) {
         result.insert(name.into(), value.into());
       }
@@ -83,6 +89,6 @@ impl Config for GitConfig {
 
   fn set(&mut self, name: &str, value: &str) -> Result<()> {
     let name = format!("{}.{}", self.namespace, name);
-    self.config.set_str(&name, value).chain_err(|| "")
+    self.config.set_str(&name, value).chain_err(|| "error setting git config")
   }
 }
