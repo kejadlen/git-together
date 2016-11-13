@@ -56,12 +56,12 @@ impl<C: Config> GitTogether<C> {
     let inits: Vec<_> = active.split('+').collect();
     let authors = self.get_authors(&inits)?;
 
-    let (author, committer) = match authors.as_slice() {
-      &[] => {
+    let (author, committer) = match *authors.as_slice() {
+      [] => {
         return Err("".into());
       }
-      &[ref solo] => (solo, solo),
-      &[ref author, ref committer, _..] => (author, committer),
+      [ref solo] => (solo, solo),
+      [ref author, ref committer, _..] => (author, committer),
     };
 
     let cmd = cmd.env("GIT_AUTHOR_NAME", author.name.clone())
@@ -111,7 +111,7 @@ impl<C: Config> GitTogether<C> {
 
   fn parse_author(&self, initials: &str, raw: &str) -> Result<Author> {
     self.author_parser
-      .parse(&raw)
+      .parse(raw)
       .ok_or(format!("invalid author for '{}': '{}'", initials, raw).into())
   }
 }
