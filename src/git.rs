@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::env;
-use std::process::Command;
 use git2;
 use errors::*;
 
@@ -49,10 +48,7 @@ impl GitConfig {
       return;
     }
 
-    // TODO Figure out how to do this using git2
-    let _ = Command::new("git")
-      .args(&["config", "--add", "include.path", &include_path])
-      .status();
+    let _ = self.config.set_multivar("include.path", "^$", &include_path);
   }
 
   fn already_included(&self, include_path: &str) -> Result<bool> {
