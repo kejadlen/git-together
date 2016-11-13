@@ -66,7 +66,9 @@ impl GitConfig {
 impl Config for GitConfig {
   fn get(&self, name: &str) -> Result<String> {
     let name = format!("{}.{}", self.namespace, name);
-    self.config.get_string(&name).chain_err(|| "error getting git config")
+    self.config
+      .get_string(&name)
+      .chain_err(|| format!("error getting git config for '{}'", name))
   }
 
   fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
@@ -85,6 +87,8 @@ impl Config for GitConfig {
 
   fn set(&mut self, name: &str, value: &str) -> Result<()> {
     let name = format!("{}.{}", self.namespace, name);
-    self.config.set_str(&name, value).chain_err(|| "error setting git config")
+    self.config
+      .set_str(&name, value)
+      .chain_err(|| "error setting git config '{}': '{}'", name, value)
   }
 }
