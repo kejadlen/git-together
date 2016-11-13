@@ -15,8 +15,8 @@ fn main() {
     let all_args: Vec<_> = env::args().skip(1).collect();
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
-    match args.as_slice() {
-      &["with"] => {
+    match *args.as_slice() {
+      ["with"] => {
         let mut gt = git_together()?;
 
         gt.set_active(&[])?;
@@ -28,7 +28,7 @@ fn main() {
           println!("{}: {}", initials, author);
         }
       }
-      &["with", ref inits..] => {
+      ["with", ref inits..] => {
         let mut gt = git_together()?;
 
         let authors = gt.set_active(inits)?;
@@ -36,7 +36,7 @@ fn main() {
           println!("{}", author);
         }
       }
-      &[sub_cmd, ref rest..] if ["commit", "merge", "revert"]
+      [sub_cmd, ref rest..] if ["commit", "merge", "revert"]
         .contains(&sub_cmd) => {
         let mut gt = git_together()?;
 
@@ -54,7 +54,7 @@ fn main() {
           gt.rotate_active()?;
         }
       }
-      args => {
+      [ref args..] => {
         Command::new("git").args(args)
           .status()
           .chain_err(|| "failed to execute process")?;
