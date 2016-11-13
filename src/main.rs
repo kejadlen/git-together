@@ -17,6 +17,10 @@ fn main() {
 
     match *args.as_slice() {
       ["with"] => {
+        println!("{} {}",
+                 option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
+                 option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
+
         let mut gt = git_together()?;
 
         gt.set_active(&[])?;
