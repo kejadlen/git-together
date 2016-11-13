@@ -89,6 +89,6 @@ impl Config for GitConfig {
     let name = format!("{}.{}", self.namespace, name);
     self.config
       .set_str(&name, value)
-      .chain_err(|| "error setting git config '{}': '{}'", name, value)
+      .chain_err(|| format!("error setting git config '{}': '{}'", name, value))
   }
 }
