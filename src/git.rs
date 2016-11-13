@@ -57,7 +57,7 @@ impl GitConfig {
       .chain_err(|| "error opening local git config")?;
     let entries = local_config.entries(None)
       .chain_err(|| "error getting git config entries")?;
-    Ok(IntoIterator::into_iter(&entries).any(|entry| {
+    Ok(entries.into_iter().any(|entry| {
       entry.map(|entry| entry.value() == Some(include_path)).unwrap_or(true)
     }))
   }
