@@ -108,7 +108,7 @@ jh: James Holden <jholden@rocinante.com>
 nn: Naomi Nagata <nnagata@rocinante.com>
 AUTHORS
 )
-  [ "$output" = "$expected" ]
+  [[ "$output" =~ "$expected" ]]
 
   run git config git-together.active
   [ "$output" = "" ]
