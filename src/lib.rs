@@ -23,33 +23,38 @@ pub struct GitTogether<C> {
 }
 
 impl GitTogether<GitConfig> {
-  pub fn new(config: GitConfig, author_parser: AuthorParser) -> GitTogether<GitConfig> {
-    GitTogether { config: config, author_parser: author_parser }
+  pub fn new(config: GitConfig,
+             author_parser: AuthorParser)
+             -> GitTogether<GitConfig> {
+    GitTogether {
+      config: config,
+      author_parser: author_parser,
+    }
   }
 }
 
 impl<C: Config> GitTogether<C> {
   pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
-    let authors = try!(self.get_authors(inits));
-    try!(self.config.set("active", &inits.join("+")));
+    let authors = self.get_authors(inits)?;
+    self.config.set("active", &inits.join("+"))?;
     Ok(authors)
   }
 
   pub fn all_authors(&self) -> Result<HashMap<String, Author>> {
     let mut authors = HashMap::new();
-    let raw = try!(self.config.get_all("authors."));
+    let raw = self.config.get_all("authors.")?;
     for (name, value) in raw {
-      let initials = try!(name.split('.').last().ok_or(""));
-      let author = try!(self.parse_author(initials, &value));
+      let initials = name.split('.').last().ok_or("")?;
+      let author = self.parse_author(initials, &value)?;
       authors.insert(initials.into(), author);
     }
     Ok(authors)
   }
 
   pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
-    let active = try!(self.config.get("active"));
+    let active = self.config.get("active")?;
     let inits: Vec<_> = active.split('+').collect();
-    let authors = try!(self.get_authors(&inits));
+    let authors = self.get_authors(&inits)?;
 
     let (author, committer) = match authors.as_slice() {
       &[] => {

@@ -17,11 +17,11 @@ pub struct GitConfig {
 
 impl GitConfig {
   pub fn new(namespace: &str) -> Result<GitConfig> {
-    let path = try!(env::current_dir()
-      .chain_err(|| "error getting current directory"));
-    let repo = try!(git2::Repository::discover(path)
-      .chain_err(|| "error discovering git repo"));
-    let config = try!(repo.config().chain_err(|| "error getting git config"));
+    let path =
+      env::current_dir().chain_err(|| "error getting current directory")?;
+    let repo = git2::Repository::discover(path)
+      .chain_err(|| "error discovering git repo")?;
+    let config = repo.config().chain_err(|| "error getting git config")?;
 
     Ok(GitConfig {
       namespace: namespace.into(),
@@ -52,11 +52,11 @@ impl GitConfig {
   }
 
   fn already_included(&self, include_path: &str) -> Result<bool> {
-    let local_config = try!(self.config
+    let local_config = self.config
       .open_level(git2::ConfigLevel::Local)
-      .chain_err(|| "error opening local git config"));
-    let entries = try!(local_config.entries(None)
-      .chain_err(|| "error getting git config entries"));
+      .chain_err(|| "error opening local git config")?;
+    let entries = local_config.entries(None)
+      .chain_err(|| "error getting git config entries")?;
     Ok(IntoIterator::into_iter(&entries).any(|entry| {
       entry.map(|entry| entry.value() == Some(include_path)).unwrap_or(true)
     }))
@@ -73,11 +73,11 @@ impl Config for GitConfig {
 
   fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
-    let entries = try!(self.config
+    let entries = self.config
       .entries(Some(glob))
-      .chain_err(|| "error getting git config entries"));
+      .chain_err(|| "error getting git config entries")?;
     for entry in &entries {
-      let entry = try!(entry.chain_err(|| "error getting git config entry"));
+      let entry = entry.chain_err(|| "error getting git config entry")?;
       if let (Some(name), Some(value)) = (entry.name(), entry.value()) {
         result.insert(name.into(), value.into());
       }
