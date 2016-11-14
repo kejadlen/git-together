@@ -10,13 +10,12 @@ pub trait Config {
 }
 
 pub struct GitConfig {
-  namespace: String,
   repo: git2::Repository,
   config: git2::Config,
 }
 
 impl GitConfig {
-  pub fn new(namespace: &str) -> Result<GitConfig> {
+  pub fn new() -> Result<GitConfig> {
     let path =
       env::current_dir().chain_err(|| "error getting current directory")?;
     let repo = git2::Repository::discover(path)
@@ -24,14 +23,12 @@ impl GitConfig {
     let config = repo.config().chain_err(|| "error getting git config")?;
 
     Ok(GitConfig {
-      namespace: namespace.into(),
       repo: repo,
       config: config,
     })
   }
 
-  pub fn auto_include(&mut self) {
-    let filename = format!(".{}", self.namespace);
+  pub fn auto_include(&mut self, filename: &str) {
     let include_path = format!("../{}", filename);
     let file_exists = self.repo.workdir().map(|path| {
       let mut path_buf = path.to_path_buf();
@@ -65,7 +62,6 @@ impl GitConfig {
 
 impl Config for GitConfig {
   fn get(&self, name: &str) -> Result<String> {
-    let name = format!("{}.{}", self.namespace, name);
     self.config
       .get_string(&name)
       .chain_err(|| format!("error getting git config for '{}'", name))
@@ -86,7 +82,6 @@ impl Config for GitConfig {
   }
 
   fn set(&mut self, name: &str, value: &str) -> Result<()> {
-    let name = format!("{}.{}", self.namespace, name);
     self.config
       .set_str(&name, value)
       .chain_err(|| format!("error setting git config '{}': '{}'", name, value))
