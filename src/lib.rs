@@ -14,25 +14,24 @@ use std::env;
 use std::process::Command;
 
 use author::{Author, AuthorParser};
-use config::{Config, GitConfig};
+use config::{Config, GitConfig, NamespacedConfig};
 use errors::*;
 
 pub struct GitTogether<C> {
-  namespace: String,
   config: C,
   author_parser: AuthorParser,
 }
 
-impl GitTogether<GitConfig> {
-  pub fn new(namespace: &str) -> Result<GitTogether<GitConfig>> {
+impl GitTogether<NamespacedConfig<GitConfig>> {
+  pub fn new(namespace: &str) -> Result<Self> {
     let mut config = GitConfig::new()?;
     config.auto_include(&format!(".{}", namespace));
+    let config = NamespacedConfig { namespace: namespace.into(), config: config };
 
-    let domain = config.get(&format!("{}.{}", namespace, "domain"))?;
+    let domain = config.get("domain")?;
     let author_parser = AuthorParser { domain: domain };
 
     Ok(GitTogether {
-      namespace: namespace.into(),
       config: config,
       author_parser: author_parser,
     })
@@ -42,8 +41,7 @@ impl GitTogether<GitConfig> {
 impl<C: Config> GitTogether<C> {
   pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
     let authors = self.get_authors(inits)?;
-    let active_key = self.namespaced("active");
-    self.config.set(&active_key, &inits.join("+"))?;
+    self.config.set("active", &inits.join("+"))?;
     Ok(authors)
   }
 
@@ -59,7 +57,7 @@ impl<C: Config> GitTogether<C> {
   }
 
   pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
-    let active = self.config.get(&self.namespaced("active"))?;
+    let active = self.config.get("active")?;
     let inits: Vec<_> = active.split('+').collect();
     let authors = self.get_authors(&inits)?;
 
@@ -88,7 +86,7 @@ impl<C: Config> GitTogether<C> {
 
   fn get_active(&self) -> Result<Vec<String>> {
     self.config
-      .get(&self.namespaced("active"))
+      .get("active")
       .map(|active| active.split('+').map(|s| s.into()).collect())
   }
 
@@ -111,7 +109,7 @@ impl<C: Config> GitTogether<C> {
 
   fn get_author(&self, initials: &str) -> Result<Author> {
     self.config
-      .get(&self.namespaced(&format!("authors.{}", initials)))
+      .get(&format!("authors.{}", initials))
       .chain_err(|| format!("author not found for '{}'", initials))
       .and_then(|raw| self.parse_author(initials, &raw))
   }
@@ -120,10 +118,6 @@ impl<C: Config> GitTogether<C> {
     self.author_parser
       .parse(raw)
       .ok_or(format!("invalid author for '{}': '{}'", initials, raw).into())
-  }
-
-  fn namespaced(&self, name: &str) -> String {
-    format!("{}.{}", self.namespace, name)
   }
 }
 
@@ -140,16 +134,15 @@ mod tests {
   #[test]
   fn get_authors() {
     let config =
-      MockConfig::new(&[("namespace.authors.jh", ""),
-                        ("namespace.authors.nn", "Naomi Nagata"),
-                        ("namespace.authors.ab", "Amos Burton; aburton"),
-                        ("namespace.authors.ak", "Alex Kamal; akamal"),
-                        ("namespace.authors.ca", "Chrisjen Avasarala;"),
-                        ("namespace.authors.bd", "Bobbie Draper; bdraper@mars.mil"),
-                        ("namespace.authors.jm", "Joe Miller; jmiller@starhelix.com")]);
+      MockConfig::new(&[("authors.jh", ""),
+                        ("authors.nn", "Naomi Nagata"),
+                        ("authors.ab", "Amos Burton; aburton"),
+                        ("authors.ak", "Alex Kamal; akamal"),
+                        ("authors.ca", "Chrisjen Avasarala;"),
+                        ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
+                        ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
     let author_parser = AuthorParser { domain: "rocinante.com".into() };
     let gt = GitTogether {
-      namespace: "namespace".into(),
       config: config,
       author_parser: author_parser,
     };
@@ -185,11 +178,10 @@ mod tests {
 
   #[test]
   fn set_active() {
-    let config = MockConfig::new(&[("namespace.authors.jh", "James Holden; jholden"),
-                                   ("namespace.authors.nn", "Naomi Nagata; nnagata")]);
+    let config = MockConfig::new(&[("authors.jh", "James Holden; jholden"),
+                                   ("authors.nn", "Naomi Nagata; nnagata")]);
     let author_parser = AuthorParser { domain: "rocinante.com".into() };
     let mut gt = GitTogether {
-      namespace: "namespace".into(),
       config: config,
       author_parser: author_parser,
     };
@@ -203,12 +195,11 @@ mod tests {
 
   #[test]
   fn rotate_active() {
-    let config = MockConfig::new(&[("namespace.active", "jh+nn"),
-                                   ("namespace.authors.jh", "James Holden; jholden"),
-                                   ("namespace.authors.nn", "Naomi Nagata; nnagata")]);
+    let config = MockConfig::new(&[("active", "jh+nn"),
+                                   ("authors.jh", "James Holden; jholden"),
+                                   ("authors.nn", "Naomi Nagata; nnagata")]);
     let author_parser = AuthorParser { domain: "rocinante.com".into() };
     let mut gt = GitTogether {
-      namespace: "namespace".into(),
       config: config,
       author_parser: author_parser,
     };
@@ -220,13 +211,12 @@ mod tests {
   #[test]
   fn all_authors() {
     let config =
-      MockConfig::new(&[("namespace.active", "jh+nn"),
-                        ("namespace.authors.ab", "Amos Burton; aburton"),
-                        ("namespace.authors.bd", "Bobbie Draper; bdraper@mars.mil"),
-                        ("namespace.authors.jm", "Joe Miller; jmiller@starhelix.com")]);
+      MockConfig::new(&[("active", "jh+nn"),
+                        ("authors.ab", "Amos Burton; aburton"),
+                        ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
+                        ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
     let author_parser = AuthorParser { domain: "rocinante.com".into() };
     let gt = GitTogether {
-      namespace: "namespace".into(),
       config: config,
       author_parser: author_parser,
     };

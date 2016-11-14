@@ -10,8 +10,8 @@ pub trait Config {
 }
 
 pub struct NamespacedConfig<C> {
-  namespace: String,
-  config: C,
+  pub namespace: String,
+  pub config: C,
 }
 
 impl<C> NamespacedConfig<C> {
