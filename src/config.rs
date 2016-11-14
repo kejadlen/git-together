@@ -10,11 +10,18 @@ pub trait Config {
 }
 
 pub struct NamespacedConfig<C> {
-  pub namespace: String,
-  pub config: C,
+  namespace: String,
+  config: C,
 }
 
 impl<C> NamespacedConfig<C> {
+  pub fn new(namespace: &str, config: C) -> Self {
+    NamespacedConfig {
+      namespace: namespace.into(),
+      config: config,
+    }
+  }
+
   fn namespaced(&self, name: &str) -> String {
     format!("{}.{}", self.namespace, name)
   }

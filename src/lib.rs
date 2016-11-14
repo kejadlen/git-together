@@ -26,8 +26,8 @@ impl GitTogether<NamespacedConfig<GitConfig>> {
   pub fn new(namespace: &str) -> Result<Self> {
     let mut config = GitConfig::new()?;
     config.auto_include(&format!(".{}", namespace));
-    let config = NamespacedConfig { namespace: namespace.into(), config: config };
 
+    let config = NamespacedConfig::new(namespace, config);
     let domain = config.get("domain")?;
     let author_parser = AuthorParser { domain: domain };
 
