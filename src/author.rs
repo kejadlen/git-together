@@ -11,7 +11,6 @@ pub struct AuthorParser {
 }
 
 impl AuthorParser {
-  // NOTE This doesn't check domain at all.
   pub fn parse(&self, raw: &str) -> Option<Author> {
     let mut split = raw.split(';').map(str::trim);
 
