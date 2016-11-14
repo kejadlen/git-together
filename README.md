@@ -2,14 +2,19 @@
 
 [![Build Status](https://travis-ci.org/kejadlen/git-together.svg?branch=master)](https://travis-ci.org/kejadlen/git-together)
 
-Following in the footsteps of [git-pair][gp] and [git-duet][gd], but using `git
-config` to hold the authors and without needing to change your existing git
-habits.
+Following in the footsteps of [git-pair][gp] and [git-duet][gd], but without
+needing to change your existing git habits.
 
 [gp]: https://github.com/pivotal/git_scripts
 [gd]: https://github.com/git-duet/git-duet
 
 ## Usage
+
+### Configuration
+
+Here's one way to configure `git-together`, but since it uses `git config` to
+store information, there are many other ways to do it. This particular example
+assumes a desire to store authors at the repo-level in a `.git-together` file.
 
 ```bash
 # `git-together` is meant to be aliased as `git`
@@ -27,7 +32,11 @@ git config --file .git-together --add git-together.authors.nn 'Naomi Nagata; nna
 
 # Adding an author with a different domain
 git config --file .git-together --add git-together.authors.ca 'Chrisjen Avasarala; avasarala@un.gov'
+```
 
+### Usage
+
+```bash
 # Pairing
 git with jh nn
 # ...
@@ -49,38 +58,31 @@ Soloing and mobbing are set by simply passing in the right number of authors to
 so that the author/committer roles are fairly spread across the pair/mob over
 time.
 
-### Known Issues
-
-TODO: Doesn't work with aliases
-
 ### Technical Details
 
-Under the hood, `git-together` will only act on the following `git` subcommands:
+Because repo-level authors are common and there's no good way of configuring
+`git config` on cloning a repo, `git-together` will automatically include
+`.git-together` to `git config` if it exists. (See `GitConfig::auto_include`
+for details.) This allows `git-together` to work immediately on cloning a repo
+without manual configuration.
 
-- `with`
-- `commit`
-- `merge`
-- `revert`
-- `rebase`
+Under the hood, `git-together` sets `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
+`GIT_COMMITTER_NAME`, and `GIT_COMMITTER_EMAIL` for the `commit`, `merge`, and
+`revert` subcommands so that git commits have the correct attribution..
+`git-together` also adds the `--signoff` argument to the `commit` and `revert`
+subcommands so that the commit message includes the `Signed-off-by: ` line.
 
-All other subcommands are passed straight through to `git`.
+### Known Issues
 
-TODO: This is accomplished by passing `--signoff` to `commit`, `merge`, and `revert`
-with the `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL` environment variables
-set appropriately. This is all done by `git-together` so you don't have to
-think about it.
+`git-together` works by aliasing `git` itself, so there are going to be issues
+with git's in-built aliases as well as other utilities (such as [Hub][hub])
+that work in the same manner.
 
-TODO: Interaction with other aliases, scripts, hub, etc.
-
-TODO: Add note about automatically adding the `include.path`.
+[hub]: https://hub.github.com/
 
 ## Development
 
-[git2 crate][gc]
-
-[gc]: https://github.com/alexcrichton/git2-rs
-
-### Running tests
+### Testing
 
 ```bash
 cargo test
@@ -91,3 +93,4 @@ cargo test
 
 - Figure out what to do when `rebase`ing.
 - Make Travis do the releases
+- Add --global flag
