@@ -63,7 +63,7 @@ impl GitConfig {
 impl Config for GitConfig {
   fn get(&self, name: &str) -> Result<String> {
     self.config
-      .get_string(&name)
+      .get_string(name)
       .chain_err(|| format!("error getting git config for '{}'", name))
   }
 
@@ -83,7 +83,7 @@ impl Config for GitConfig {
 
   fn set(&mut self, name: &str, value: &str) -> Result<()> {
     self.config
-      .set_str(&name, value)
+      .set_str(name, value)
       .chain_err(|| format!("error setting git config '{}': '{}'", name, value))
   }
 }
