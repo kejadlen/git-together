@@ -6,9 +6,9 @@ use std::env;
 use std::process::Command;
 
 use git_together::GitTogether;
-use git_together::author::AuthorParser;
 use git_together::errors::*;
-use git_together::git::{Config, GitConfig};
+
+const NAMESPACE: &'static str = "git-together";
 
 fn main() {
   run(|| {
@@ -21,7 +21,7 @@ fn main() {
                  option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
                  option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
 
-        let mut gt = git_together()?;
+        let mut gt = GitTogether::new(NAMESPACE)?;
 
         gt.set_active(&[])?;
         let authors = gt.all_authors()?;
@@ -33,7 +33,7 @@ fn main() {
         }
       }
       ["with", ref inits..] => {
-        let mut gt = git_together()?;
+        let mut gt = GitTogether::new(NAMESPACE)?;
 
         let authors = gt.set_active(inits)?;
         for author in authors {
@@ -42,7 +42,7 @@ fn main() {
       }
       [sub_cmd, ref rest..] if ["commit", "merge", "revert"]
         .contains(&sub_cmd) => {
-        let mut gt = git_together()?;
+        let mut gt = GitTogether::new(NAMESPACE)?;
 
         if sub_cmd == "merge" {
           env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
@@ -67,16 +67,6 @@ fn main() {
 
     Ok(())
   })
-}
-
-fn git_together() -> Result<GitTogether<GitConfig>> {
-  let mut config = GitConfig::new("git-together")?;
-  config.auto_include();
-
-  let domain = config.get("domain")?;
-  let author_parser = AuthorParser { domain: domain };
-
-  Ok(GitTogether::new(config, author_parser))
 }
 
 fn run<F>(f: F)

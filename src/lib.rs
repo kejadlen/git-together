@@ -18,18 +18,28 @@ use errors::*;
 use git::{Config, GitConfig};
 
 pub struct GitTogether<C> {
+  namespace: String,
   config: C,
   author_parser: AuthorParser,
 }
 
 impl GitTogether<GitConfig> {
-  pub fn new(config: GitConfig,
-             author_parser: AuthorParser)
-             -> GitTogether<GitConfig> {
-    GitTogether {
+  pub fn new(namespace: &str) -> Result<GitTogether<GitConfig>> {
+    let mut config = GitConfig::new(namespace)?;
+    config.auto_include();
+
+    let domain = config.get("domain")?;
+    let author_parser = AuthorParser { domain: domain };
+
+    Ok(GitTogether {
+      namespace: namespace.into(),
       config: config,
       author_parser: author_parser,
-    }
+    })
+  }
+
+  fn namespaced(&self, name: &str) -> String {
+    format!("{}.{}", self.namespace, name)
   }
 }
 
@@ -138,6 +148,7 @@ mod tests {
                         ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
     let author_parser = AuthorParser { domain: "rocinante.com".into() };
     let gt = GitTogether {
+      namespace: "git-together".into(),
       config: config,
       author_parser: author_parser,
     };
@@ -177,6 +188,7 @@ mod tests {
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
     let author_parser = AuthorParser { domain: "rocinante.com".into() };
     let mut gt = GitTogether {
+      namespace: "git-together".into(),
       config: config,
       author_parser: author_parser,
     };
@@ -195,6 +207,7 @@ mod tests {
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
     let author_parser = AuthorParser { domain: "rocinante.com".into() };
     let mut gt = GitTogether {
+      namespace: "git-together".into(),
       config: config,
       author_parser: author_parser,
     };
@@ -212,6 +225,7 @@ mod tests {
                         ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
     let author_parser = AuthorParser { domain: "rocinante.com".into() };
     let gt = GitTogether {
+      namespace: "git-together".into(),
       config: config,
       author_parser: author_parser,
     };
