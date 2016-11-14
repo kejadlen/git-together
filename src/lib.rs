@@ -6,16 +6,16 @@ extern crate error_chain;
 extern crate git2;
 
 pub mod author;
+pub mod config;
 pub mod errors;
-pub mod git;
 
 use std::collections::HashMap;
 use std::env;
 use std::process::Command;
 
 use author::{Author, AuthorParser};
+use config::{Config, GitConfig};
 use errors::*;
-use git::{Config, GitConfig};
 
 pub struct GitTogether<C> {
   namespace: String,
@@ -134,8 +134,8 @@ mod tests {
   use std::collections::HashMap;
 
   use author::{Author, AuthorParser};
+  use config::Config;
   use errors::*;
-  use git::Config;
 
   #[test]
   fn get_authors() {
