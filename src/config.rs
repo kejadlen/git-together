@@ -6,6 +6,7 @@ use errors::*;
 pub trait Config {
   fn get(&self, name: &str) -> Result<String>;
   fn get_all(&self, glob: &str) -> Result<HashMap<String, String>>;
+  fn add(&mut self, name: &str, value: &str) -> Result<()>;
   fn set(&mut self, name: &str, value: &str) -> Result<()>;
 }
 
@@ -34,6 +35,11 @@ impl<C: Config> Config for NamespacedConfig<C> {
 
   fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
     self.config.get_all(&self.namespaced(glob))
+  }
+
+  fn add(&mut self, name: &str, value: &str) -> Result<()> {
+    let name = self.namespaced(name);
+    self.config.add(&name, value)
   }
 
   fn set(&mut self, name: &str, value: &str) -> Result<()> {
@@ -112,6 +118,12 @@ impl Config for GitConfig {
       }
     }
     Ok(result)
+  }
+
+  fn add(&mut self, name: &str, value: &str) -> Result<()> {
+    self.config
+      .set_multivar(name, "^$", value)
+      .chain_err(|| format!("error adding git config '{}': '{}'", name, value))
   }
 
   fn set(&mut self, name: &str, value: &str) -> Result<()> {

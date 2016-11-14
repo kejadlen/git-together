@@ -268,6 +268,10 @@ mod tests {
         .collect())
     }
 
+    fn add(&mut self, _: &str, _: &str) -> Result<()> {
+      unimplemented!();
+    }
+
     fn set(&mut self, name: &str, value: &str) -> Result<()> {
       self.data.insert(name.into(), value.into());
       Ok(())
