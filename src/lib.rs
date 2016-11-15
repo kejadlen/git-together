@@ -40,9 +40,9 @@ impl GitTogether<NamespacedConfig<GitConfig>> {
 
   fn open_config() -> Result<git2::Config> {
     Self::open_repo()
-      .and_then(|repo| repo.config().chain_err(|| ""))
+      .and_then(|repo| repo.config().chain_err(|| "error getting git config from repo"))
       .or_else(|_| git2::Config::open_default())
-      .chain_err(|| "")
+      .chain_err(|| "error opening git config")
   }
 
   fn auto_include(config: &mut git2::Config, namespace: &str) {
@@ -87,8 +87,8 @@ impl GitTogether<NamespacedConfig<GitConfig>> {
   }
 
   fn open_repo() -> Result<git2::Repository> {
-    let path = env::current_dir().chain_err(|| "")?;
-    git2::Repository::discover(path).chain_err(|| "")
+    let path = env::current_dir().chain_err(|| "error getting current directory")?;
+    git2::Repository::discover(path).chain_err(|| "error discovering git repo")
   }
 }
 
