@@ -165,6 +165,13 @@ AUTHORS
   [[ "$output" =~ "Signed-off-by: James Holden <jholden@rocinante.com>" ]]
 }
 
+@test "not in a git repo" {
+  cd $BATS_TMPDIR
+
+  run git-together with
+  [ "$status" -eq 0 ]
+}
+
 setup() {
   # [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
   rm -rf $BATS_TMPDIR/bin

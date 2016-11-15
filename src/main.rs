@@ -23,7 +23,7 @@ fn main() {
 
         let mut gt = GitTogether::new(NAMESPACE)?;
 
-        gt.set_active(&[])?;
+        let _ = gt.set_active(&[]);
         let authors = gt.all_authors()?;
         let mut sorted: Vec<_> = authors.iter().collect();
         sorted.sort_by(|a, b| a.0.cmp(b.0));

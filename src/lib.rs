@@ -39,8 +39,10 @@ impl GitTogether<NamespacedConfig<GitConfig>> {
   }
 
   fn open_config() -> Result<git2::Config> {
-    let repo = Self::open_repo()?;
-    repo.config().or_else(|_| git2::Config::open_default()).chain_err(|| "")
+    Self::open_repo()
+      .and_then(|repo| repo.config().chain_err(|| ""))
+      .or_else(|_| git2::Config::open_default())
+      .chain_err(|| "")
   }
 
   fn auto_include(config: &mut git2::Config, namespace: &str) {
@@ -49,7 +51,9 @@ impl GitTogether<NamespacedConfig<GitConfig>> {
 
     let repo = match Self::open_repo() {
       Ok(repo) => repo,
-      Err(_) => { return; }
+      Err(_) => {
+        return;
+      }
     };
 
     let file_exists = repo.workdir().map(|path| {
@@ -70,9 +74,10 @@ impl GitTogether<NamespacedConfig<GitConfig>> {
     let _ = config.set_multivar("include.path", "^$", &include_path);
   }
 
-  fn already_included(config: &git2::Config, include_path: &str) -> Result<bool> {
-    let local_config = config
-      .open_level(git2::ConfigLevel::Local)
+  fn already_included(config: &git2::Config,
+                      include_path: &str)
+                      -> Result<bool> {
+    let local_config = config.open_level(git2::ConfigLevel::Local)
       .chain_err(|| "error opening local git config")?;
     let entries = local_config.entries(None)
       .chain_err(|| "error getting git config entries")?;
