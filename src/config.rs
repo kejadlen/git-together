@@ -84,7 +84,7 @@ impl GitConfig {
       return;
     }
 
-    let _ = self.config.set_multivar("include.path", "^$", &include_path);
+    let _ = self.add("include.path", &include_path);
   }
 
   fn already_included(&self, include_path: &str) -> Result<bool> {
