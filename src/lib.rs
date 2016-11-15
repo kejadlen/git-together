@@ -24,9 +24,10 @@ pub struct GitTogether<C> {
 
 impl GitTogether<NamespacedConfig<GitConfig>> {
   pub fn new(namespace: &str) -> Result<Self> {
-    let mut config = GitConfig::new()?;
-    config.auto_include(&format!(".{}", namespace));
+    let mut config = Self::open_config()?;
+    Self::auto_include(&mut config, namespace);
 
+    let config = GitConfig { config: config };
     let config = NamespacedConfig::new(namespace, config);
     let domain = config.get("domain")?;
     let author_parser = AuthorParser { domain: domain };
@@ -35,6 +36,54 @@ impl GitTogether<NamespacedConfig<GitConfig>> {
       config: config,
       author_parser: author_parser,
     })
+  }
+
+  fn open_config() -> Result<git2::Config> {
+    let repo = Self::open_repo()?;
+    repo.config().or_else(|_| git2::Config::open_default()).chain_err(|| "")
+  }
+
+  fn auto_include(config: &mut git2::Config, namespace: &str) {
+    let filename = format!(".{}", namespace);
+    let include_path = format!("../{}", filename);
+
+    let repo = match Self::open_repo() {
+      Ok(repo) => repo,
+      Err(_) => { return; }
+    };
+
+    let file_exists = repo.workdir().map(|path| {
+      let mut path_buf = path.to_path_buf();
+      path_buf.push(&filename);
+      path_buf.exists()
+    });
+
+    // Make sure .git-together exists
+    if !file_exists.unwrap_or(false) {
+      return;
+    }
+
+    if Self::already_included(config, &include_path).unwrap_or(true) {
+      return;
+    }
+
+    let _ = config.set_multivar("include.path", "^$", &include_path);
+  }
+
+  fn already_included(config: &git2::Config, include_path: &str) -> Result<bool> {
+    let local_config = config
+      .open_level(git2::ConfigLevel::Local)
+      .chain_err(|| "error opening local git config")?;
+    let entries = local_config.entries(None)
+      .chain_err(|| "error getting git config entries")?;
+    Ok(entries.into_iter().any(|entry| {
+      entry.map(|entry| entry.value() == Some(include_path)).unwrap_or(true)
+    }))
+  }
+
+  fn open_repo() -> Result<git2::Repository> {
+    let path = env::current_dir().chain_err(|| "")?;
+    git2::Repository::discover(path).chain_err(|| "")
   }
 }
 

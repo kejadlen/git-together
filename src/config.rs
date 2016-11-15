@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::env;
 use git2;
 use errors::*;
 
@@ -49,54 +48,7 @@ impl<C: Config> Config for NamespacedConfig<C> {
 }
 
 pub struct GitConfig {
-  repo: git2::Repository,
-  config: git2::Config,
-}
-
-impl GitConfig {
-  pub fn new() -> Result<GitConfig> {
-    let path =
-      env::current_dir().chain_err(|| "error getting current directory")?;
-    let repo = git2::Repository::discover(path)
-      .chain_err(|| "error discovering git repo")?;
-    let config = repo.config().chain_err(|| "error getting git config")?;
-
-    Ok(GitConfig {
-      repo: repo,
-      config: config,
-    })
-  }
-
-  pub fn auto_include(&mut self, filename: &str) {
-    let include_path = format!("../{}", filename);
-    let file_exists = self.repo.workdir().map(|path| {
-      let mut path_buf = path.to_path_buf();
-      path_buf.push(&filename);
-      path_buf.exists()
-    });
-
-    // Make sure .git-together exists
-    if !file_exists.unwrap_or(false) {
-      return;
-    }
-
-    if self.already_included(&include_path).unwrap_or(true) {
-      return;
-    }
-
-    let _ = self.add("include.path", &include_path);
-  }
-
-  fn already_included(&self, include_path: &str) -> Result<bool> {
-    let local_config = self.config
-      .open_level(git2::ConfigLevel::Local)
-      .chain_err(|| "error opening local git config")?;
-    let entries = local_config.entries(None)
-      .chain_err(|| "error getting git config entries")?;
-    Ok(entries.into_iter().any(|entry| {
-      entry.map(|entry| entry.value() == Some(include_path)).unwrap_or(true)
-    }))
-  }
+  pub config: git2::Config,
 }
 
 impl Config for GitConfig {
