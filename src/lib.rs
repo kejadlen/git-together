@@ -35,7 +35,7 @@ impl GitTogether<NamespacedConfig<git::Config>> {
       Err(e) => Err(e),
     }.or_else(|_| git::Config::new())?;
     let config = NamespacedConfig::new(namespace, config);
-    let domain = config.get("domain")?;
+    let domain = config.get("domain").ok();
     let author_parser = AuthorParser { domain: domain };
 
     Ok(GitTogether {
@@ -124,7 +124,7 @@ impl<C: config::Config> GitTogether<C> {
   fn parse_author(&self, initials: &str, raw: &str) -> Result<Author> {
     self.author_parser
       .parse(raw)
-      .ok_or(format!("invalid author for '{}': '{}'", initials, raw).into())
+      .chain_err(|| format!("invalid author for '{}': '{}'", initials, raw))
   }
 }
 
@@ -148,7 +148,7 @@ mod tests {
                         ("authors.ca", "Chrisjen Avasarala;"),
                         ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
                         ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
-    let author_parser = AuthorParser { domain: "rocinante.com".into() };
+    let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
     let gt = GitTogether {
       config: config,
       author_parser: author_parser,
@@ -187,7 +187,7 @@ mod tests {
   fn set_active() {
     let config = MockConfig::new(&[("authors.jh", "James Holden; jholden"),
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
-    let author_parser = AuthorParser { domain: "rocinante.com".into() };
+    let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
     let mut gt = GitTogether {
       config: config,
       author_parser: author_parser,
@@ -205,7 +205,7 @@ mod tests {
     let config = MockConfig::new(&[("active", "jh+nn"),
                                    ("authors.jh", "James Holden; jholden"),
                                    ("authors.nn", "Naomi Nagata; nnagata")]);
-    let author_parser = AuthorParser { domain: "rocinante.com".into() };
+    let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
     let mut gt = GitTogether {
       config: config,
       author_parser: author_parser,
@@ -222,7 +222,7 @@ mod tests {
                         ("authors.ab", "Amos Burton; aburton"),
                         ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
                         ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
-    let author_parser = AuthorParser { domain: "rocinante.com".into() };
+    let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
     let gt = GitTogether {
       config: config,
       author_parser: author_parser,

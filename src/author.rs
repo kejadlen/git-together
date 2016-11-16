@@ -1,5 +1,7 @@
 use std::fmt;
 
+use errors::*;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Author {
   pub name: String,
@@ -7,34 +9,38 @@ pub struct Author {
 }
 
 pub struct AuthorParser {
-  pub domain: String,
+  pub domain: Option<String>,
 }
 
 impl AuthorParser {
-  pub fn parse(&self, raw: &str) -> Option<Author> {
+  pub fn parse(&self, raw: &str) -> Result<Author> {
     let mut split = raw.split(';').map(str::trim);
 
     let name = match split.next() {
       Some(name) if !name.is_empty() => name,
       _ => {
-        return None;
+        return Err("missing name".into());
       }
     };
 
     let email_seed = match split.next() {
       Some(email_seed) if !email_seed.is_empty() => email_seed,
       _ => {
-        return None;
+        return Err("missing email seed".into());
       }
     };
 
     let email = if email_seed.contains('@') {
       email_seed.into()
     } else {
-      format!("{}@{}", email_seed, self.domain)
+      let domain = match self.domain {
+        Some(ref domain) => domain,
+        None => { return Err("missing domain".into()); },
+      };
+      format!("{}@{}", email_seed, domain)
     };
 
-    Some(Author {
+    Ok(Author {
       name: name.into(),
       email: email,
     })
@@ -53,20 +59,20 @@ mod tests {
 
   #[test]
   fn new() {
-    let author_parser = AuthorParser { domain: "example.com".into() };
+    let author_parser = AuthorParser { domain: Some("example.com".into()) };
 
     let author = author_parser.parse("Jane Doe; jdoe").unwrap();
     assert_eq!(author.name, "Jane Doe");
     assert_eq!(author.email, "jdoe@example.com");
 
     let author = author_parser.parse("");
-    assert!(author.is_none());
+    assert!(author.is_err());
 
     let author = author_parser.parse("Jane Doe");
-    assert!(author.is_none());
+    assert!(author.is_err());
 
     let author = author_parser.parse("Jane Doe; ");
-    assert!(author.is_none());
+    assert!(author.is_err());
 
     let author = author_parser.parse("Jane Doe; jane.doe@example.edu").unwrap();
     assert_eq!(author.name, "Jane Doe");
