@@ -8,13 +8,14 @@ extern crate git2;
 pub mod author;
 pub mod config;
 pub mod errors;
+pub mod git;
 
 use std::collections::HashMap;
 use std::env;
 use std::process::Command;
 
 use author::{Author, AuthorParser};
-use config::{Config, GitConfig, NamespacedConfig};
+use config::{Config, NamespacedConfig};
 use errors::*;
 
 pub struct GitTogether<C> {
@@ -22,12 +23,17 @@ pub struct GitTogether<C> {
   author_parser: AuthorParser,
 }
 
-impl GitTogether<NamespacedConfig<GitConfig>> {
+impl GitTogether<NamespacedConfig<git::Config>> {
   pub fn new(namespace: &str) -> Result<Self> {
-    let mut config = Self::open_config()?;
-    Self::auto_include(&mut config, namespace);
+    let repo = git::Repo::new();
+    if let Ok(ref repo) = repo {
+      let _ = repo.auto_include(&format!(".{}", namespace));
+    }
 
-    let config = GitConfig { config: config };
+    let config = match repo {
+      Ok(ref repo) => repo.config(),
+      Err(e) => Err(e),
+    }.or_else(|_| git::Config::new())?;
     let config = NamespacedConfig::new(namespace, config);
     let domain = config.get("domain")?;
     let author_parser = AuthorParser { domain: domain };
@@ -37,62 +43,9 @@ impl GitTogether<NamespacedConfig<GitConfig>> {
       author_parser: author_parser,
     })
   }
-
-  fn open_config() -> Result<git2::Config> {
-    Self::open_repo()
-      .and_then(|repo| repo.config().chain_err(|| "error getting git config from repo"))
-      .or_else(|_| git2::Config::open_default())
-      .chain_err(|| "error opening git config")
-  }
-
-  fn auto_include(config: &mut git2::Config, namespace: &str) {
-    let filename = format!(".{}", namespace);
-    let include_path = format!("../{}", filename);
-
-    let repo = match Self::open_repo() {
-      Ok(repo) => repo,
-      Err(_) => {
-        return;
-      }
-    };
-
-    let file_exists = repo.workdir().map(|path| {
-      let mut path_buf = path.to_path_buf();
-      path_buf.push(&filename);
-      path_buf.exists()
-    });
-
-    // Make sure .git-together exists
-    if !file_exists.unwrap_or(false) {
-      return;
-    }
-
-    if Self::already_included(config, &include_path).unwrap_or(true) {
-      return;
-    }
-
-    let _ = config.set_multivar("include.path", "^$", &include_path);
-  }
-
-  fn already_included(config: &git2::Config,
-                      include_path: &str)
-                      -> Result<bool> {
-    let local_config = config.open_level(git2::ConfigLevel::Local)
-      .chain_err(|| "error opening local git config")?;
-    let entries = local_config.entries(None)
-      .chain_err(|| "error getting git config entries")?;
-    Ok(entries.into_iter().any(|entry| {
-      entry.map(|entry| entry.value() == Some(include_path)).unwrap_or(true)
-    }))
-  }
-
-  fn open_repo() -> Result<git2::Repository> {
-    let path = env::current_dir().chain_err(|| "error getting current directory")?;
-    git2::Repository::discover(path).chain_err(|| "error discovering git repo")
-  }
 }
 
-impl<C: Config> GitTogether<C> {
+impl<C: config::Config> GitTogether<C> {
   pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
     let authors = self.get_authors(inits)?;
     self.config.set("active", &inits.join("+"))?;
