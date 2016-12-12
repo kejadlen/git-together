@@ -72,10 +72,17 @@ fn main() {
 fn run<F>(f: F)
   where F: Fn() -> Result<()>
 {
-  if let Err(error) = f() {
-    for error in error.iter() {
-      println!("{}", error);
+  if let Err(e) = f() {
+    println!("error: {}", e);
+
+    for e in e.iter().skip(1) {
+      println!("caused by: {}", e);
     }
+
+    if let Some(backtrace) = e.backtrace() {
+      println!("backtrace: {:?}", backtrace);
+    }
+
     std::process::exit(1);
   }
 }
