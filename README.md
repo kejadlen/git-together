@@ -92,5 +92,4 @@ cargo test
 ### TODO
 
 - Figure out what to do when `rebase`ing.
-- Make Travis do the releases
 - Add --global flag
