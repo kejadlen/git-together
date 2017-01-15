@@ -19,6 +19,9 @@ main() {
            --git japaric/cross \
            --tag v0.1.4 \
            --target $target
+
+    git clone https://github.com/sstephenson/bats.git /tmp/bats
+    /tmp/bats/install.sh $HOME
 }
 
 main

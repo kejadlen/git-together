@@ -16,6 +16,8 @@ main() {
 
     cross run --target $TARGET
     cross run --target $TARGET --release
+
+    ~/bin/bats --tap bats
 }
 
 # we don't run the "test phase" when doing deploys

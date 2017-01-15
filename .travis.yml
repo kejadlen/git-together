@@ -61,12 +61,10 @@ matrix:
 before_install: set -e
 
 install:
-  - git clone https://github.com/sstephenson/bats.git /tmp/bats && /tmp/bats/install.sh
   - sh ci/install.sh
   - source ~/.cargo/env || true
 
 script:
-- ~/bin/bats --tap bats
   - bash ci/script.sh
 
 after_script: set +e
