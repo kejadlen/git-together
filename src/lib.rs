@@ -18,8 +18,10 @@ use author::{Author, AuthorParser};
 use config::Config;
 use errors::*;
 
+const NAMESPACE: &'static str = "git-together";
+
 fn namespaced(name: &str) -> String {
-    format!("git-together.{}", name)
+    format!("{}.{}", NAMESPACE, name)
 }
 
 pub struct GitTogether<C> {
@@ -28,10 +30,10 @@ pub struct GitTogether<C> {
 }
 
 impl GitTogether<git::Config> {
-    pub fn new(namespace: &str) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let repo = git::Repo::new();
         if let Ok(ref repo) = repo {
-            let _ = repo.auto_include(&format!(".{}", namespace));
+            let _ = repo.auto_include(&format!(".{}", NAMESPACE));
         }
 
         let config = match repo {

@@ -8,8 +8,6 @@ use std::process::Command;
 use git_together::GitTogether;
 use git_together::errors::*;
 
-const NAMESPACE: &'static str = "git-together";
-
 fn main() {
   run(|| {
     let all_args: Vec<_> = env::args().skip(1).collect();
@@ -21,7 +19,7 @@ fn main() {
                  option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
                  option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
 
-        let mut gt = GitTogether::new(NAMESPACE)?;
+        let mut gt = GitTogether::new()?;
 
         let _ = gt.set_active(&[]);
         let authors = gt.all_authors()?;
@@ -33,7 +31,7 @@ fn main() {
         }
       }
       ["with", ref inits..] => {
-        let mut gt = GitTogether::new(NAMESPACE)?;
+        let mut gt = GitTogether::new()?;
 
         let authors = gt.set_active(inits)?;
         for author in authors {
@@ -42,7 +40,7 @@ fn main() {
       }
       [sub_cmd, ref rest..] if ["commit", "merge", "revert"]
         .contains(&sub_cmd) => {
-        let mut gt = GitTogether::new(NAMESPACE)?;
+        let mut gt = GitTogether::new()?;
 
         if sub_cmd == "merge" {
           env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
