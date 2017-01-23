@@ -19,271 +19,283 @@ use config::Config;
 use errors::*;
 
 fn namespaced(name: &str) -> String {
-  format!("git-together.{}", name)
+    format!("git-together.{}", name)
 }
 
 pub struct GitTogether<C> {
-  config: C,
-  author_parser: AuthorParser,
+    config: C,
+    author_parser: AuthorParser,
 }
 
 impl GitTogether<git::Config> {
-  pub fn new(namespace: &str) -> Result<Self> {
-    let repo = git::Repo::new();
-    if let Ok(ref repo) = repo {
-      let _ = repo.auto_include(&format!(".{}", namespace));
+    pub fn new(namespace: &str) -> Result<Self> {
+        let repo = git::Repo::new();
+        if let Ok(ref repo) = repo {
+            let _ = repo.auto_include(&format!(".{}", namespace));
+        }
+
+        let config = match repo {
+                Ok(ref repo) => repo.config(),
+                Err(e) => Err(e),
+            }.or_else(|_| git::Config::new())?;
+        let domain = config.get(&namespaced("domain")).ok();
+        let author_parser = AuthorParser { domain: domain };
+
+        Ok(GitTogether {
+            config: config,
+            author_parser: author_parser,
+        })
     }
-
-    let config = match repo {
-      Ok(ref repo) => repo.config(),
-      Err(e) => Err(e),
-    }.or_else(|_| git::Config::new())?;
-    let domain = config.get(&namespaced("domain")).ok();
-    let author_parser = AuthorParser { domain: domain };
-
-    Ok(GitTogether {
-      config: config,
-      author_parser: author_parser,
-    })
-  }
 }
 
 impl<C: config::Config> GitTogether<C> {
-  pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
-    let authors = self.get_authors(inits)?;
-    self.config.set(&namespaced("active"), &inits.join("+"))?;
-    Ok(authors)
-  }
-
-  pub fn all_authors(&self) -> Result<HashMap<String, Author>> {
-    let mut authors = HashMap::new();
-    let raw = self.config.get_all(&namespaced("authors."))?;
-    for (name, value) in raw {
-      let initials = name.split('.').last().ok_or("")?;
-      let author = self.parse_author(initials, &value)?;
-      authors.insert(initials.into(), author);
+    pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
+        let authors = self.get_authors(inits)?;
+        self.config.set(&namespaced("active"), &inits.join("+"))?;
+        Ok(authors)
     }
-    Ok(authors)
-  }
 
-  pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
-    let active = self.config.get(&namespaced("active"))?;
-    let inits: Vec<_> = active.split('+').collect();
-    let authors = self.get_authors(&inits)?;
+    pub fn all_authors(&self) -> Result<HashMap<String, Author>> {
+        let mut authors = HashMap::new();
+        let raw = self.config.get_all(&namespaced("authors."))?;
+        for (name, value) in raw {
+            let initials = name.split('.').last().ok_or("")?;
+            let author = self.parse_author(initials, &value)?;
+            authors.insert(initials.into(), author);
+        }
+        Ok(authors)
+    }
 
-    let (author, committer) = match *authors.as_slice() {
-      [] => {
-        return Err("".into());
-      }
-      [ref solo] => (solo, solo),
-      [ref author, ref committer, _..] => (author, committer),
-    };
+    pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
+        let active = self.config.get(&namespaced("active"))?;
+        let inits: Vec<_> = active.split('+').collect();
+        let authors = self.get_authors(&inits)?;
 
-    let cmd = cmd.env("GIT_AUTHOR_NAME", author.name.clone())
-      .env("GIT_AUTHOR_EMAIL", author.email.clone())
-      .env("GIT_COMMITTER_NAME", committer.name.clone())
-      .env("GIT_COMMITTER_EMAIL", committer.email.clone());
+        let (author, committer) = match *authors.as_slice() {
+            [] => {
+                return Err("".into());
+            }
+            [ref solo] => (solo, solo),
+            [ref author, ref committer, _..] => (author, committer),
+        };
 
-    let no_signoff = env::var("GIT_TOGETHER_NO_SIGNOFF").is_ok();
-    let cmd = if !no_signoff && author != committer {
-      cmd.arg("--signoff")
-    } else {
-      cmd
-    };
+        let cmd = cmd.env("GIT_AUTHOR_NAME", author.name.clone())
+            .env("GIT_AUTHOR_EMAIL", author.email.clone())
+            .env("GIT_COMMITTER_NAME", committer.name.clone())
+            .env("GIT_COMMITTER_EMAIL", committer.email.clone());
 
-    Ok(cmd)
-  }
+        let no_signoff = env::var("GIT_TOGETHER_NO_SIGNOFF").is_ok();
+        let cmd = if !no_signoff && author != committer {
+            cmd.arg("--signoff")
+        } else {
+            cmd
+        };
 
-  fn get_active(&self) -> Result<Vec<String>> {
-    self.config
-      .get(&namespaced("active"))
-      .map(|active| active.split('+').map(|s| s.into()).collect())
-  }
+        Ok(cmd)
+    }
 
-  pub fn rotate_active(&mut self) -> Result<()> {
-    self.get_active().and_then(|active| {
-      let mut inits: Vec<_> = active.iter().map(String::as_ref).collect();
-      if !inits.is_empty() {
-        let author = inits.remove(0);
-        inits.push(author);
-      }
-      self.set_active(&inits[..]).map(|_| ())
-    })
-  }
+    fn get_active(&self) -> Result<Vec<String>> {
+        self.config
+            .get(&namespaced("active"))
+            .map(|active| active.split('+').map(|s| s.into()).collect())
+    }
 
-  fn get_authors(&self, inits: &[&str]) -> Result<Vec<Author>> {
-    inits.iter()
-      .map(|&initials| self.get_author(initials))
-      .collect()
-  }
+    pub fn rotate_active(&mut self) -> Result<()> {
+        self.get_active().and_then(|active| {
+            let mut inits: Vec<_> = active.iter().map(String::as_ref).collect();
+            if !inits.is_empty() {
+                let author = inits.remove(0);
+                inits.push(author);
+            }
+            self.set_active(&inits[..]).map(|_| ())
+        })
+    }
 
-  fn get_author(&self, initials: &str) -> Result<Author> {
-    self.config
-      .get(&namespaced(&format!("authors.{}", initials)))
-      .chain_err(|| format!("author not found for '{}'", initials))
-      .and_then(|raw| self.parse_author(initials, &raw))
-  }
+    fn get_authors(&self, inits: &[&str]) -> Result<Vec<Author>> {
+        inits.iter()
+            .map(|&initials| self.get_author(initials))
+            .collect()
+    }
 
-  fn parse_author(&self, initials: &str, raw: &str) -> Result<Author> {
-    self.author_parser
-      .parse(raw)
-      .chain_err(|| format!("invalid author for '{}': '{}'", initials, raw))
-  }
+    fn get_author(&self, initials: &str) -> Result<Author> {
+        self.config
+            .get(&namespaced(&format!("authors.{}", initials)))
+            .chain_err(|| format!("author not found for '{}'", initials))
+            .and_then(|raw| self.parse_author(initials, &raw))
+    }
+
+    fn parse_author(&self, initials: &str, raw: &str) -> Result<Author> {
+        self.author_parser
+            .parse(raw)
+            .chain_err(|| {
+                format!("invalid author for '{}': '{}'", initials, raw)
+            })
+    }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  use std::collections::HashMap;
+    use std::collections::HashMap;
 
-  use author::{Author, AuthorParser};
-  use config::Config;
+    use author::{Author, AuthorParser};
+    use config::Config;
 
-  #[test]
-  fn get_authors() {
-    let config =
-      MockConfig::new(&[("authors.jh", ""),
-                        ("authors.nn", "Naomi Nagata"),
-                        ("authors.ab", "Amos Burton; aburton"),
-                        ("authors.ak", "Alex Kamal; akamal"),
-                        ("authors.ca", "Chrisjen Avasarala;"),
-                        ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
-                        ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
-    let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
-    let gt = GitTogether {
-      config: config,
-      author_parser: author_parser,
-    };
+    #[test]
+    fn get_authors() {
+        let config = MockConfig::new(&[("authors.jh", ""),
+                                       ("authors.nn", "Naomi Nagata"),
+                                       ("authors.ab", "Amos Burton; aburton"),
+                                       ("authors.ak", "Alex Kamal; akamal"),
+                                       ("authors.ca", "Chrisjen Avasarala;"),
+                                       ("authors.bd",
+                                        "Bobbie Draper; bdraper@mars.mil"),
+                                       ("authors.jm",
+                                        "Joe Miller; jmiller@starhelix.com")]);
+        let author_parser =
+            AuthorParser { domain: Some("rocinante.com".into()) };
+        let gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
 
-    assert!(gt.get_authors(&["jh"]).is_err());
-    assert!(gt.get_authors(&["nn"]).is_err());
-    assert!(gt.get_authors(&["ca"]).is_err());
-    assert!(gt.get_authors(&["jh", "bd"]).is_err());
+        assert!(gt.get_authors(&["jh"]).is_err());
+        assert!(gt.get_authors(&["nn"]).is_err());
+        assert!(gt.get_authors(&["ca"]).is_err());
+        assert!(gt.get_authors(&["jh", "bd"]).is_err());
 
-    assert_eq!(gt.get_authors(&["ab", "ak"]).unwrap(),
-               vec![Author {
-                      name: "Amos Burton".into(),
-                      email: "aburton@rocinante.com".into(),
-                    },
-                    Author {
-                      name: "Alex Kamal".into(),
-                      email: "akamal@rocinante.com".into(),
-                    }]);
-    assert_eq!(gt.get_authors(&["ab", "bd", "jm"]).unwrap(),
-               vec![Author {
-                      name: "Amos Burton".into(),
-                      email: "aburton@rocinante.com".into(),
-                    },
-                    Author {
-                      name: "Bobbie Draper".into(),
-                      email: "bdraper@mars.mil".into(),
-                    },
-                    Author {
-                      name: "Joe Miller".into(),
-                      email: "jmiller@starhelix.com".into(),
-                    }]);
-  }
-
-  #[test]
-  fn set_active() {
-    let config = MockConfig::new(&[("authors.jh", "James Holden; jholden"),
-                                   ("authors.nn", "Naomi Nagata; nnagata")]);
-    let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
-    let mut gt = GitTogether {
-      config: config,
-      author_parser: author_parser,
-    };
-
-    gt.set_active(&["jh"]).unwrap();
-    assert_eq!(gt.get_active().unwrap(), vec!["jh"]);
-
-    gt.set_active(&["jh", "nn"]).unwrap();
-    assert_eq!(gt.get_active().unwrap(), vec!["jh", "nn"]);
-  }
-
-  #[test]
-  fn rotate_active() {
-    let config = MockConfig::new(&[("active", "jh+nn"),
-                                   ("authors.jh", "James Holden; jholden"),
-                                   ("authors.nn", "Naomi Nagata; nnagata")]);
-    let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
-    let mut gt = GitTogether {
-      config: config,
-      author_parser: author_parser,
-    };
-
-    gt.rotate_active().unwrap();
-    assert_eq!(gt.get_active().unwrap(), vec!["nn", "jh"]);
-  }
-
-  #[test]
-  fn all_authors() {
-    let config =
-      MockConfig::new(&[("active", "jh+nn"),
-                        ("authors.ab", "Amos Burton; aburton"),
-                        ("authors.bd", "Bobbie Draper; bdraper@mars.mil"),
-                        ("authors.jm", "Joe Miller; jmiller@starhelix.com")]);
-    let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
-    let gt = GitTogether {
-      config: config,
-      author_parser: author_parser,
-    };
-
-    let all_authors = gt.all_authors().unwrap();
-    assert_eq!(all_authors.len(), 3);
-    assert_eq!(all_authors["ab"],
-               Author {
-                 name: "Amos Burton".into(),
-                 email: "aburton@rocinante.com".into(),
-               });
-    assert_eq!(all_authors["bd"],
-               Author {
-                 name: "Bobbie Draper".into(),
-                 email: "bdraper@mars.mil".into(),
-               });
-    assert_eq!(all_authors["jm"],
-               Author {
-                 name: "Joe Miller".into(),
-                 email: "jmiller@starhelix.com".into(),
-               });
-  }
-
-  struct MockConfig {
-    data: HashMap<String, String>,
-  }
-
-  impl MockConfig {
-    fn new(data: &[(&str, &str)]) -> MockConfig {
-      MockConfig {
-        data: data.iter().map(|&(k, v)| (namespaced(k), v.into())).collect(),
-      }
-    }
-  }
-
-  impl Config for MockConfig {
-    fn get(&self, name: &str) -> Result<String> {
-      self.data
-        .get(name.into())
-        .cloned()
-        .ok_or(format!("name not found: '{}'", name).into())
+        assert_eq!(gt.get_authors(&["ab", "ak"]).unwrap(),
+                   vec![Author {
+                            name: "Amos Burton".into(),
+                            email: "aburton@rocinante.com".into(),
+                        },
+                        Author {
+                            name: "Alex Kamal".into(),
+                            email: "akamal@rocinante.com".into(),
+                        }]);
+        assert_eq!(gt.get_authors(&["ab", "bd", "jm"]).unwrap(),
+                   vec![Author {
+                            name: "Amos Burton".into(),
+                            email: "aburton@rocinante.com".into(),
+                        },
+                        Author {
+                            name: "Bobbie Draper".into(),
+                            email: "bdraper@mars.mil".into(),
+                        },
+                        Author {
+                            name: "Joe Miller".into(),
+                            email: "jmiller@starhelix.com".into(),
+                        }]);
     }
 
-    fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
-      Ok(self.data
-        .iter()
-        .filter(|&(name, _)| name.contains(glob))
-        .map(|(name, value)| (name.clone(), value.clone()))
-        .collect())
+    #[test]
+    fn set_active() {
+        let config =
+            MockConfig::new(&[("authors.jh", "James Holden; jholden"),
+                              ("authors.nn", "Naomi Nagata; nnagata")]);
+        let author_parser =
+            AuthorParser { domain: Some("rocinante.com".into()) };
+        let mut gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        gt.set_active(&["jh"]).unwrap();
+        assert_eq!(gt.get_active().unwrap(), vec!["jh"]);
+
+        gt.set_active(&["jh", "nn"]).unwrap();
+        assert_eq!(gt.get_active().unwrap(), vec!["jh", "nn"]);
     }
 
-    fn add(&mut self, _: &str, _: &str) -> Result<()> {
-      unimplemented!();
+    #[test]
+    fn rotate_active() {
+        let config =
+            MockConfig::new(&[("active", "jh+nn"),
+                              ("authors.jh", "James Holden; jholden"),
+                              ("authors.nn", "Naomi Nagata; nnagata")]);
+        let author_parser =
+            AuthorParser { domain: Some("rocinante.com".into()) };
+        let mut gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        gt.rotate_active().unwrap();
+        assert_eq!(gt.get_active().unwrap(), vec!["nn", "jh"]);
     }
 
-    fn set(&mut self, name: &str, value: &str) -> Result<()> {
-      self.data.insert(name.into(), value.into());
-      Ok(())
+    #[test]
+    fn all_authors() {
+        let config = MockConfig::new(&[("active", "jh+nn"),
+                                       ("authors.ab", "Amos Burton; aburton"),
+                                       ("authors.bd",
+                                        "Bobbie Draper; bdraper@mars.mil"),
+                                       ("authors.jm",
+                                        "Joe Miller; jmiller@starhelix.com")]);
+        let author_parser =
+            AuthorParser { domain: Some("rocinante.com".into()) };
+        let gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        let all_authors = gt.all_authors().unwrap();
+        assert_eq!(all_authors.len(), 3);
+        assert_eq!(all_authors["ab"],
+                   Author {
+                       name: "Amos Burton".into(),
+                       email: "aburton@rocinante.com".into(),
+                   });
+        assert_eq!(all_authors["bd"],
+                   Author {
+                       name: "Bobbie Draper".into(),
+                       email: "bdraper@mars.mil".into(),
+                   });
+        assert_eq!(all_authors["jm"],
+                   Author {
+                       name: "Joe Miller".into(),
+                       email: "jmiller@starhelix.com".into(),
+                   });
     }
-  }
+
+    struct MockConfig {
+        data: HashMap<String, String>,
+    }
+
+    impl MockConfig {
+        fn new(data: &[(&str, &str)]) -> MockConfig {
+            MockConfig {
+                data: data.iter()
+                    .map(|&(k, v)| (namespaced(k), v.into()))
+                    .collect(),
+            }
+        }
+    }
+
+    impl Config for MockConfig {
+        fn get(&self, name: &str) -> Result<String> {
+            self.data
+                .get(name.into())
+                .cloned()
+                .ok_or(format!("name not found: '{}'", name).into())
+        }
+
+        fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
+            Ok(self.data
+                .iter()
+                .filter(|&(name, _)| name.contains(glob))
+                .map(|(name, value)| (name.clone(), value.clone()))
+                .collect())
+        }
+
+        fn add(&mut self, _: &str, _: &str) -> Result<()> {
+            unimplemented!();
+        }
+
+        fn set(&mut self, name: &str, value: &str) -> Result<()> {
+            self.data.insert(name.into(), value.into());
+            Ok(())
+        }
+    }
 }
