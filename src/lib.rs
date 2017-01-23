@@ -36,10 +36,7 @@ impl GitTogether<git::Config> {
             let _ = repo.auto_include(&format!(".{}", NAMESPACE));
         }
 
-        let config = match repo {
-                Ok(ref repo) => repo.config(),
-                Err(e) => Err(e),
-            }.or_else(|_| git::Config::new())?;
+        let config = repo.and_then(|r| r.config()).or_else(|_| git::Config::new())?;
         let domain = config.get(&namespaced("domain")).ok();
         let author_parser = AuthorParser { domain: domain };
 
