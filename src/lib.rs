@@ -15,15 +15,19 @@ use std::env;
 use std::process::Command;
 
 use author::{Author, AuthorParser};
-use config::{Config, NamespacedConfig};
+use config::Config;
 use errors::*;
+
+fn namespaced(name: &str) -> String {
+  format!("git-together.{}", name)
+}
 
 pub struct GitTogether<C> {
   config: C,
   author_parser: AuthorParser,
 }
 
-impl GitTogether<NamespacedConfig<git::Config>> {
+impl GitTogether<git::Config> {
   pub fn new(namespace: &str) -> Result<Self> {
     let repo = git::Repo::new();
     if let Ok(ref repo) = repo {
@@ -34,8 +38,7 @@ impl GitTogether<NamespacedConfig<git::Config>> {
       Ok(ref repo) => repo.config(),
       Err(e) => Err(e),
     }.or_else(|_| git::Config::new())?;
-    let config = NamespacedConfig::new(namespace, config);
-    let domain = config.get("domain").ok();
+    let domain = config.get(&namespaced("domain")).ok();
     let author_parser = AuthorParser { domain: domain };
 
     Ok(GitTogether {
@@ -48,13 +51,13 @@ impl GitTogether<NamespacedConfig<git::Config>> {
 impl<C: config::Config> GitTogether<C> {
   pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
     let authors = self.get_authors(inits)?;
-    self.config.set("active", &inits.join("+"))?;
+    self.config.set(&namespaced("active"), &inits.join("+"))?;
     Ok(authors)
   }
 
   pub fn all_authors(&self) -> Result<HashMap<String, Author>> {
     let mut authors = HashMap::new();
-    let raw = self.config.get_all("authors.")?;
+    let raw = self.config.get_all(&namespaced("authors."))?;
     for (name, value) in raw {
       let initials = name.split('.').last().ok_or("")?;
       let author = self.parse_author(initials, &value)?;
@@ -64,7 +67,7 @@ impl<C: config::Config> GitTogether<C> {
   }
 
   pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
-    let active = self.config.get("active")?;
+    let active = self.config.get(&namespaced("active"))?;
     let inits: Vec<_> = active.split('+').collect();
     let authors = self.get_authors(&inits)?;
 
@@ -93,7 +96,7 @@ impl<C: config::Config> GitTogether<C> {
 
   fn get_active(&self) -> Result<Vec<String>> {
     self.config
-      .get("active")
+      .get(&namespaced("active"))
       .map(|active| active.split('+').map(|s| s.into()).collect())
   }
 
@@ -116,7 +119,7 @@ impl<C: config::Config> GitTogether<C> {
 
   fn get_author(&self, initials: &str) -> Result<Author> {
     self.config
-      .get(&format!("authors.{}", initials))
+      .get(&namespaced(&format!("authors.{}", initials)))
       .chain_err(|| format!("author not found for '{}'", initials))
       .and_then(|raw| self.parse_author(initials, &raw))
   }
@@ -136,7 +139,6 @@ mod tests {
 
   use author::{Author, AuthorParser};
   use config::Config;
-  use errors::*;
 
   #[test]
   fn get_authors() {
@@ -254,7 +256,7 @@ mod tests {
   impl MockConfig {
     fn new(data: &[(&str, &str)]) -> MockConfig {
       MockConfig {
-        data: data.iter().map(|&(k, v)| (k.into(), v.into())).collect(),
+        data: data.iter().map(|&(k, v)| (namespaced(k), v.into())).collect(),
       }
     }
   }
