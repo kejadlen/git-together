@@ -5,4 +5,4 @@ authors = ["Alpha Chen <alpha.chen@gmail.com>"]
 
 [dependencies]
 error-chain = "0.5"
-git2 = { git = "https://github.com/alexcrichton/git2-rs.git" }
+git2 = "0.6"
