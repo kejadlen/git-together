@@ -36,7 +36,8 @@ impl GitTogether<git::Config> {
             let _ = repo.auto_include(&format!(".{}", NAMESPACE));
         }
 
-        let config = repo.and_then(|r| r.config()).or_else(|_| git::Config::new())?;
+        let config = repo.and_then(|r| r.config())
+            .or_else(|_| git::Config::new())?;
         let domain = config.get(&namespaced("domain")).ok();
         let author_parser = AuthorParser { domain: domain };
 
@@ -143,14 +144,18 @@ mod tests {
 
     #[test]
     fn get_authors() {
-        let config = MockConfig::new(&[("authors.jh", ""),
-                                       ("authors.nn", "Naomi Nagata"),
-                                       ("authors.ab", "Amos Burton; aburton"),
-                                       ("authors.ak", "Alex Kamal; akamal"),
-                                       ("authors.ca", "Chrisjen Avasarala;"),
-                                       ("authors.bd",
+        let config = MockConfig::new(&[("git-together.authors.jh", ""),
+                                       ("git-together.authors.nn",
+                                        "Naomi Nagata"),
+                                       ("git-together.authors.ab",
+                                        "Amos Burton; aburton"),
+                                       ("git-together.authors.ak",
+                                        "Alex Kamal; akamal"),
+                                       ("git-together.authors.ca",
+                                        "Chrisjen Avasarala;"),
+                                       ("git-together.authors.bd",
                                         "Bobbie Draper; bdraper@mars.mil"),
-                                       ("authors.jm",
+                                       ("git-together.authors.jm",
                                         "Joe Miller; jmiller@starhelix.com")]);
         let author_parser =
             AuthorParser { domain: Some("rocinante.com".into()) };
@@ -191,8 +196,8 @@ mod tests {
     #[test]
     fn set_active() {
         let config =
-            MockConfig::new(&[("authors.jh", "James Holden; jholden"),
-                              ("authors.nn", "Naomi Nagata; nnagata")]);
+            MockConfig::new(&[("git-together.authors.jh", "James Holden; jholden"),
+                              ("git-together.authors.nn", "Naomi Nagata; nnagata")]);
         let author_parser =
             AuthorParser { domain: Some("rocinante.com".into()) };
         let mut gt = GitTogether {
@@ -210,9 +215,9 @@ mod tests {
     #[test]
     fn rotate_active() {
         let config =
-            MockConfig::new(&[("active", "jh+nn"),
-                              ("authors.jh", "James Holden; jholden"),
-                              ("authors.nn", "Naomi Nagata; nnagata")]);
+            MockConfig::new(&[("git-together.active", "jh+nn"),
+                              ("git-together.authors.jh", "James Holden; jholden"),
+                              ("git-together.authors.nn", "Naomi Nagata; nnagata")]);
         let author_parser =
             AuthorParser { domain: Some("rocinante.com".into()) };
         let mut gt = GitTogether {
@@ -226,11 +231,11 @@ mod tests {
 
     #[test]
     fn all_authors() {
-        let config = MockConfig::new(&[("active", "jh+nn"),
-                                       ("authors.ab", "Amos Burton; aburton"),
-                                       ("authors.bd",
+        let config = MockConfig::new(&[("git-together.active", "jh+nn"),
+                                       ("git-together.authors.ab", "Amos Burton; aburton"),
+                                       ("git-together.authors.bd",
                                         "Bobbie Draper; bdraper@mars.mil"),
-                                       ("authors.jm",
+                                       ("git-together.authors.jm",
                                         "Joe Miller; jmiller@starhelix.com")]);
         let author_parser =
             AuthorParser { domain: Some("rocinante.com".into()) };
@@ -266,7 +271,7 @@ mod tests {
         fn new(data: &[(&str, &str)]) -> MockConfig {
             MockConfig {
                 data: data.iter()
-                    .map(|&(k, v)| (namespaced(k), v.into()))
+                    .map(|&(k, v)| (k.into(), v.into()))
                     .collect(),
             }
         }
