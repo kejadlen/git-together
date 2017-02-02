@@ -52,7 +52,40 @@ impl<C: config::Config> GitTogether<C> {
     pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
         let authors = self.get_authors(inits)?;
         self.config.set(&namespaced("active"), &inits.join("+"))?;
+
+        self.save_original_user()?;
+        if let Some(author) = authors.iter().next() {
+            self.set_user(&author.name, &author.email)?;
+        }
+
         Ok(authors)
+    }
+
+    fn save_original_user(&mut self) -> Result<()> {
+        if let Ok(name) = self.config.get("user.name") {
+            let key = namespaced("user.name");
+            self.config
+                .get(&key)
+                .map(|_| ())
+                .or_else(|_| self.config.set(&key, &name))?;
+        }
+
+        if let Ok(email) = self.config.get("user.email") {
+            let key = namespaced("user.email");
+            self.config
+                .get(&key)
+                .map(|_| ())
+                .or_else(|_| self.config.set(&key, &email))?;
+        }
+
+        Ok(())
+    }
+
+    fn set_user(&mut self, name: &str, email: &str) -> Result<()> {
+        self.config.set("user.name", name)?;
+        self.config.set("user.email", email)?;
+
+        Ok(())
     }
 
     pub fn all_authors(&self) -> Result<HashMap<String, Author>> {
@@ -138,6 +171,7 @@ mod tests {
     use super::*;
 
     use std::collections::HashMap;
+    use std::ops::Index;
 
     use author::{Author, AuthorParser};
     use config::Config;
@@ -194,10 +228,13 @@ mod tests {
     }
 
     #[test]
-    fn set_active() {
-        let config =
-            MockConfig::new(&[("git-together.authors.jh", "James Holden; jholden"),
-                              ("git-together.authors.nn", "Naomi Nagata; nnagata")]);
+    fn set_active_solo() {
+        let config = MockConfig::new(&[("git-together.authors.jh",
+                                        "James Holden; jholden"),
+                                       ("git-together.authors.nn",
+                                        "Naomi Nagata; nnagata"),
+                                       ("user.name", "Bobbie Draper"),
+                                       ("user.email", "bdraper@mars.mil")]);
         let author_parser =
             AuthorParser { domain: Some("rocinante.com".into()) };
         let mut gt = GitTogether {
@@ -207,17 +244,63 @@ mod tests {
 
         gt.set_active(&["jh"]).unwrap();
         assert_eq!(gt.get_active().unwrap(), vec!["jh"]);
+        assert_eq!(gt.config["user.name"], "James Holden");
+        assert_eq!(gt.config["user.email"], "jholden@rocinante.com");
+        assert_eq!(gt.config["git-together.user.name"], "Bobbie Draper");
+        assert_eq!(gt.config["git-together.user.email"], "bdraper@mars.mil");
+    }
 
-        gt.set_active(&["jh", "nn"]).unwrap();
-        assert_eq!(gt.get_active().unwrap(), vec!["jh", "nn"]);
+    #[test]
+    fn set_active_pair() {
+        let config = MockConfig::new(&[("git-together.authors.jh",
+                                        "James Holden; jholden"),
+                                       ("git-together.authors.nn",
+                                        "Naomi Nagata; nnagata"),
+                                       ("user.name", "Bobbie Draper"),
+                                       ("user.email", "bdraper@mars.mil")]);
+        let author_parser =
+            AuthorParser { domain: Some("rocinante.com".into()) };
+        let mut gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        gt.set_active(&["nn", "jh"]).unwrap();
+        assert_eq!(gt.get_active().unwrap(), vec!["nn", "jh"]);
+        assert_eq!(gt.config["user.name"], "Naomi Nagata");
+        assert_eq!(gt.config["user.email"], "nnagata@rocinante.com");
+        assert_eq!(gt.config["git-together.user.name"], "Bobbie Draper");
+        assert_eq!(gt.config["git-together.user.email"], "bdraper@mars.mil");
+    }
+
+    #[test]
+    fn multiple_set_active() {
+        let config = MockConfig::new(&[("git-together.authors.jh",
+                                        "James Holden; jholden"),
+                                       ("git-together.authors.nn",
+                                        "Naomi Nagata; nnagata"),
+                                       ("user.name", "Bobbie Draper"),
+                                       ("user.email", "bdraper@mars.mil")]);
+        let author_parser =
+            AuthorParser { domain: Some("rocinante.com".into()) };
+        let mut gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        gt.set_active(&["nn"]).unwrap();
+        gt.set_active(&["jh"]).unwrap();
+        assert_eq!(gt.config["git-together.user.name"], "Bobbie Draper");
+        assert_eq!(gt.config["git-together.user.email"], "bdraper@mars.mil");
     }
 
     #[test]
     fn rotate_active() {
-        let config =
-            MockConfig::new(&[("git-together.active", "jh+nn"),
-                              ("git-together.authors.jh", "James Holden; jholden"),
-                              ("git-together.authors.nn", "Naomi Nagata; nnagata")]);
+        let config = MockConfig::new(&[("git-together.active", "jh+nn"),
+                                       ("git-together.authors.jh",
+                                        "James Holden; jholden"),
+                                       ("git-together.authors.nn",
+                                        "Naomi Nagata; nnagata")]);
         let author_parser =
             AuthorParser { domain: Some("rocinante.com".into()) };
         let mut gt = GitTogether {
@@ -232,7 +315,8 @@ mod tests {
     #[test]
     fn all_authors() {
         let config = MockConfig::new(&[("git-together.active", "jh+nn"),
-                                       ("git-together.authors.ab", "Amos Burton; aburton"),
+                                       ("git-together.authors.ab",
+                                        "Amos Burton; aburton"),
                                        ("git-together.authors.bd",
                                         "Bobbie Draper; bdraper@mars.mil"),
                                        ("git-together.authors.jm",
@@ -274,6 +358,14 @@ mod tests {
                     .map(|&(k, v)| (k.into(), v.into()))
                     .collect(),
             }
+        }
+    }
+
+    impl<'a> Index<&'a str> for MockConfig {
+        type Output = String;
+
+        fn index(&self, key: &'a str) -> &String {
+            self.data.index(key)
         }
     }
 
