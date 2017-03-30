@@ -49,10 +49,11 @@ fn main() {
                 }
 
                 let mut cmd = Command::new("git");
-                let cmd = cmd.arg(sub_cmd).args(rest);
+                let cmd = cmd.arg(sub_cmd);
+                let cmd = gt.signoff(cmd)?;
+                let cmd = cmd.args(rest);
 
-                let signoff = gt.signoff(cmd)?;
-                let status = signoff.status()
+                let status = cmd.status()
                     .chain_err(|| "failed to execute process")?;
                 if status.success() {
                     gt.rotate_active()?;

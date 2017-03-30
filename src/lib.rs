@@ -118,13 +118,11 @@ impl<C: config::Config> GitTogether<C> {
             .env("GIT_COMMITTER_EMAIL", committer.email.clone());
 
         let no_signoff = env::var("GIT_TOGETHER_NO_SIGNOFF").is_ok();
-        let cmd = if !no_signoff && author != committer {
+        Ok(if !no_signoff && author != committer {
             cmd.arg("--signoff")
         } else {
             cmd
-        };
-
-        Ok(cmd)
+        })
     }
 
     fn get_active(&self) -> Result<Vec<String>> {
