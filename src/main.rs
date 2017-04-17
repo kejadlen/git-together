@@ -21,9 +21,8 @@ fn main() {
                          option_env!("CARGO_PKG_VERSION")
                              .unwrap_or("unknown version"));
 
-                let mut gt = GitTogether::new()?;
+                let gt = GitTogether::new()?;
 
-                let _ = gt.set_active(&[]);
                 let authors = gt.all_authors()?;
                 let mut sorted: Vec<_> = authors.iter().collect();
                 sorted.sort_by(|a, b| a.0.cmp(b.0));
@@ -31,6 +30,11 @@ fn main() {
                 for (initials, author) in sorted {
                     println!("{}: {}", initials, author);
                 }
+            }
+            ["with", ref inits..] if inits.contains(&"--clear") => {
+                let mut gt = GitTogether::new()?;
+
+                let _ = gt.set_active(&[]);
             }
             ["with", ref inits..] => {
                 let mut gt = GitTogether::new()?;
