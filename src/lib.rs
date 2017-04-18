@@ -106,16 +106,17 @@ impl GitTogether<git::Config> {
         let author_parser = AuthorParser { domain: domain };
 
         Ok(GitTogether {
-            config: config,
-            author_parser: author_parser,
-        })
+               config: config,
+               author_parser: author_parser,
+           })
     }
 }
 
 impl<C: config::Config> GitTogether<C> {
     pub fn set_active(&mut self, inits: &[&str]) -> Result<Vec<Author>> {
         let authors = self.get_authors(inits)?;
-        self.config.set(&namespaced("active"), &inits.join("+"))?;
+        self.config
+            .set(&namespaced("active"), &inits.join("+"))?;
 
         self.save_original_user()?;
         if let Some(author) = authors.iter().next() {
@@ -183,10 +184,10 @@ impl<C: config::Config> GitTogether<C> {
 
         let no_signoff = env::var("GIT_TOGETHER_NO_SIGNOFF").is_ok();
         Ok(if !no_signoff && author != committer {
-            cmd.arg("--signoff")
-        } else {
-            cmd
-        })
+               cmd.arg("--signoff")
+           } else {
+               cmd
+           })
     }
 
     fn get_active(&self) -> Result<Vec<String>> {
@@ -196,18 +197,20 @@ impl<C: config::Config> GitTogether<C> {
     }
 
     pub fn rotate_active(&mut self) -> Result<()> {
-        self.get_active().and_then(|active| {
-            let mut inits: Vec<_> = active.iter().map(String::as_ref).collect();
-            if !inits.is_empty() {
-                let author = inits.remove(0);
-                inits.push(author);
-            }
-            self.set_active(&inits[..]).map(|_| ())
-        })
+        self.get_active()
+            .and_then(|active| {
+                          let mut inits: Vec<_> = active.iter().map(String::as_ref).collect();
+                          if !inits.is_empty() {
+                              let author = inits.remove(0);
+                              inits.push(author);
+                          }
+                          self.set_active(&inits[..]).map(|_| ())
+                      })
     }
 
     fn get_authors(&self, inits: &[&str]) -> Result<Vec<Author>> {
-        inits.iter()
+        inits
+            .iter()
             .map(|&initials| self.get_author(initials))
             .collect()
     }
@@ -222,9 +225,7 @@ impl<C: config::Config> GitTogether<C> {
     fn parse_author(&self, initials: &str, raw: &str) -> Result<Author> {
         self.author_parser
             .parse(raw)
-            .chain_err(|| {
-                format!("invalid author for '{}': '{}'", initials, raw)
-            })
+            .chain_err(|| format!("invalid author for '{}': '{}'", initials, raw))
     }
 }
 
@@ -240,21 +241,15 @@ mod tests {
 
     #[test]
     fn get_authors() {
-        let config = MockConfig::new(&[("git-together.authors.jh", ""),
-                                       ("git-together.authors.nn",
-                                        "Naomi Nagata"),
-                                       ("git-together.authors.ab",
-                                        "Amos Burton; aburton"),
-                                       ("git-together.authors.ak",
-                                        "Alex Kamal; akamal"),
-                                       ("git-together.authors.ca",
-                                        "Chrisjen Avasarala;"),
-                                       ("git-together.authors.bd",
-                                        "Bobbie Draper; bdraper@mars.mil"),
-                                       ("git-together.authors.jm",
-                                        "Joe Miller; jmiller@starhelix.com")]);
-        let author_parser =
-            AuthorParser { domain: Some("rocinante.com".into()) };
+        let config =
+            MockConfig::new(&[("git-together.authors.jh", ""),
+                              ("git-together.authors.nn", "Naomi Nagata"),
+                              ("git-together.authors.ab", "Amos Burton; aburton"),
+                              ("git-together.authors.ak", "Alex Kamal; akamal"),
+                              ("git-together.authors.ca", "Chrisjen Avasarala;"),
+                              ("git-together.authors.bd", "Bobbie Draper; bdraper@mars.mil"),
+                              ("git-together.authors.jm", "Joe Miller; jmiller@starhelix.com")]);
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
         let gt = GitTogether {
             config: config,
             author_parser: author_parser,
@@ -291,14 +286,11 @@ mod tests {
 
     #[test]
     fn set_active_solo() {
-        let config = MockConfig::new(&[("git-together.authors.jh",
-                                        "James Holden; jholden"),
-                                       ("git-together.authors.nn",
-                                        "Naomi Nagata; nnagata"),
+        let config = MockConfig::new(&[("git-together.authors.jh", "James Holden; jholden"),
+                                       ("git-together.authors.nn", "Naomi Nagata; nnagata"),
                                        ("user.name", "Bobbie Draper"),
                                        ("user.email", "bdraper@mars.mil")]);
-        let author_parser =
-            AuthorParser { domain: Some("rocinante.com".into()) };
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
         let mut gt = GitTogether {
             config: config,
             author_parser: author_parser,
@@ -314,14 +306,11 @@ mod tests {
 
     #[test]
     fn set_active_pair() {
-        let config = MockConfig::new(&[("git-together.authors.jh",
-                                        "James Holden; jholden"),
-                                       ("git-together.authors.nn",
-                                        "Naomi Nagata; nnagata"),
+        let config = MockConfig::new(&[("git-together.authors.jh", "James Holden; jholden"),
+                                       ("git-together.authors.nn", "Naomi Nagata; nnagata"),
                                        ("user.name", "Bobbie Draper"),
                                        ("user.email", "bdraper@mars.mil")]);
-        let author_parser =
-            AuthorParser { domain: Some("rocinante.com".into()) };
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
         let mut gt = GitTogether {
             config: config,
             author_parser: author_parser,
@@ -337,14 +326,11 @@ mod tests {
 
     #[test]
     fn multiple_set_active() {
-        let config = MockConfig::new(&[("git-together.authors.jh",
-                                        "James Holden; jholden"),
-                                       ("git-together.authors.nn",
-                                        "Naomi Nagata; nnagata"),
+        let config = MockConfig::new(&[("git-together.authors.jh", "James Holden; jholden"),
+                                       ("git-together.authors.nn", "Naomi Nagata; nnagata"),
                                        ("user.name", "Bobbie Draper"),
                                        ("user.email", "bdraper@mars.mil")]);
-        let author_parser =
-            AuthorParser { domain: Some("rocinante.com".into()) };
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
         let mut gt = GitTogether {
             config: config,
             author_parser: author_parser,
@@ -359,12 +345,9 @@ mod tests {
     #[test]
     fn rotate_active() {
         let config = MockConfig::new(&[("git-together.active", "jh+nn"),
-                                       ("git-together.authors.jh",
-                                        "James Holden; jholden"),
-                                       ("git-together.authors.nn",
-                                        "Naomi Nagata; nnagata")]);
-        let author_parser =
-            AuthorParser { domain: Some("rocinante.com".into()) };
+                                       ("git-together.authors.jh", "James Holden; jholden"),
+                                       ("git-together.authors.nn", "Naomi Nagata; nnagata")]);
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
         let mut gt = GitTogether {
             config: config,
             author_parser: author_parser,
@@ -376,15 +359,12 @@ mod tests {
 
     #[test]
     fn all_authors() {
-        let config = MockConfig::new(&[("git-together.active", "jh+nn"),
-                                       ("git-together.authors.ab",
-                                        "Amos Burton; aburton"),
-                                       ("git-together.authors.bd",
-                                        "Bobbie Draper; bdraper@mars.mil"),
-                                       ("git-together.authors.jm",
-                                        "Joe Miller; jmiller@starhelix.com")]);
-        let author_parser =
-            AuthorParser { domain: Some("rocinante.com".into()) };
+        let config =
+            MockConfig::new(&[("git-together.active", "jh+nn"),
+                              ("git-together.authors.ab", "Amos Burton; aburton"),
+                              ("git-together.authors.bd", "Bobbie Draper; bdraper@mars.mil"),
+                              ("git-together.authors.jm", "Joe Miller; jmiller@starhelix.com")]);
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
         let gt = GitTogether {
             config: config,
             author_parser: author_parser,
@@ -441,10 +421,10 @@ mod tests {
 
         fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
             Ok(self.data
-                .iter()
-                .filter(|&(name, _)| name.contains(glob))
-                .map(|(name, value)| (name.clone(), value.clone()))
-                .collect())
+                   .iter()
+                   .filter(|&(name, _)| name.contains(glob))
+                   .map(|(name, value)| (name.clone(), value.clone()))
+                   .collect())
         }
 
         fn add(&mut self, _: &str, _: &str) -> Result<()> {
