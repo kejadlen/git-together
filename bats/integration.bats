@@ -111,7 +111,7 @@ AUTHORS
   [[ "$output" =~ "$expected" ]]
 
   run git config git-together.active
-  [  "$output" = "jh" ]
+  [ "$output" = "jh" ]
 }
 
 @test "no signoff" {
