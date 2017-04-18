@@ -31,7 +31,7 @@ fn main() {
                     println!("{}: {}", initials, author);
                 }
             }
-            ["with", ref inits..] if inits.contains(&"--clear") => {
+            ["with", "--clear"] => {
                 let mut gt = GitTogether::new()?;
 
                 let _ = gt.set_active(&[]);
