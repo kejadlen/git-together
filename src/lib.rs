@@ -31,12 +31,10 @@ pub fn run() -> Result<()> {
     match *args.as_slice() {
         ["with"] => {
             println!("{} {}",
-                     option_env!("CARGO_PKG_NAME")
-                     .unwrap_or("git-together"),
-                     option_env!("CARGO_PKG_VERSION")
-                     .unwrap_or("unknown version"));
+                     option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
+                     option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
 
-            let gt = GitTogether::new()?;
+            let gt = GitTogether::new(ConfigScope::Local)?;
 
             let authors = gt.all_authors()?;
             let mut sorted: Vec<_> = authors.iter().collect();
@@ -46,40 +44,48 @@ pub fn run() -> Result<()> {
                 println!("{}: {}", initials, author);
             }
         }
-        ["with", "--clear"] => {
-            let mut gt = GitTogether::new()?;
-
-            let _ = gt.set_active(&[]);
-        }
-        ["with", ref inits..] => {
-            let mut gt = GitTogether::new()?;
+        ["with", "--global", ref inits..] => {
+            let mut gt = GitTogether::new(ConfigScope::Global)?;
 
             let authors = gt.set_active(inits)?;
             for author in authors {
                 println!("{}", author);
             }
         }
-        [sub_cmd, ref rest..] if ["commit", "merge", "revert"]
-            .contains(&sub_cmd) => {
-                let mut gt = GitTogether::new()?;
 
-                if sub_cmd == "merge" {
-                    env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
-                }
+        ["with", "--clear"] => {
+            let mut gt = GitTogether::new(ConfigScope::Local)?;
 
-                let mut cmd = Command::new("git");
-                let cmd = cmd.arg(sub_cmd);
-                let cmd = gt.signoff(cmd)?;
-                let cmd = cmd.args(rest);
+            let _ = gt.set_active(&[]);
+        }
+        ["with", ref inits..] => {
+            let mut gt = GitTogether::new(ConfigScope::Local)?;
 
-                let status = cmd.status()
-                    .chain_err(|| "failed to execute process")?;
-                if status.success() {
-                    gt.rotate_active()?;
-                }
+            let authors = gt.set_active(inits)?;
+            for author in authors {
+                println!("{}", author);
             }
+        }
+        [sub_cmd, ref rest..] if ["commit", "merge", "revert"].contains(&sub_cmd) => {
+            let mut gt = GitTogether::new(ConfigScope::Local)?;
+
+            if sub_cmd == "merge" {
+                env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
+            }
+
+            let mut cmd = Command::new("git");
+            let cmd = cmd.arg(sub_cmd);
+            let cmd = gt.signoff(cmd)?;
+            let cmd = cmd.args(rest);
+
+            let status = cmd.status().chain_err(|| "failed to execute process")?;
+            if status.success() {
+                gt.rotate_active()?;
+            }
+        }
         [ref args..] => {
-            Command::new("git").args(args)
+            Command::new("git")
+                .args(args)
                 .status()
                 .chain_err(|| "failed to execute process")?;
         }
@@ -93,15 +99,20 @@ pub struct GitTogether<C> {
     author_parser: AuthorParser,
 }
 
+pub enum ConfigScope {
+    Local,
+    Global,
+}
+
 impl GitTogether<git::Config> {
-    pub fn new() -> Result<Self> {
+    pub fn new(scope: ConfigScope) -> Result<Self> {
         let repo = git::Repo::new();
         if let Ok(ref repo) = repo {
             let _ = repo.auto_include(&format!(".{}", NAMESPACE));
         }
 
         let config = repo.and_then(|r| r.config())
-            .or_else(|_| git::Config::new())?;
+            .or_else(|_| git::Config::new(scope))?;
         let domain = config.get(&namespaced("domain")).ok();
         let author_parser = AuthorParser { domain: domain };
 

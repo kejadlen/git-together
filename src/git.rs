@@ -4,6 +4,7 @@ use std::env;
 use git2;
 
 use config;
+use ConfigScope;
 use errors::*;
 
 pub struct Repo {
@@ -84,8 +85,13 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Result<Self> {
-        git2::Config::open_default()
+    pub fn new(scope: ConfigScope) -> Result<Self> {
+        let config = match scope {
+            ConfigScope::Local => git2::Config::open_default(),
+            ConfigScope::Global => git2::Config::new().and_then(|mut c| c.open_global()),
+        };
+
+        config
             .map(|config| Config { config: config })
             .chain_err(|| "")
     }
