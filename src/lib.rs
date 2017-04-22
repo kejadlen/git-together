@@ -9,7 +9,7 @@ use std::process;
 mod errors;
 use errors::*;
 
-pub fn run(args: Vec<String>) -> Result<()> {
+pub fn run(args: &[&str]) -> Result<()> {
     GitTogether::new().run(args)
 }
 
@@ -22,7 +22,7 @@ impl GitTogether {
         Self { quiet: false }
     }
 
-    fn run(&self, args: Vec<String>) -> Result<()> {
+    fn run(&self, args: &[&str]) -> Result<()> {
         let mut cmd = process::Command::new("git");
         cmd.args(args);
         if self.quiet {
@@ -45,12 +45,9 @@ mod tests {
     fn passthrough_by_default() {
         let test = IntegrationTest::new();
 
-        let args = vec!["commit", "-m", "ohai"]
-            .into_iter()
-            .map(String::from)
-            .collect();
         let gt = GitTogether { quiet: true };
-        gt.run(args).unwrap();
+        let args = ["commit", "-m", "ohai"];
+        gt.run(&args).unwrap();
 
         assert_eq!(test.last_author(), "Original User <email@example.com>");
     }
