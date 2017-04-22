@@ -6,3 +6,6 @@ authors = ["Alpha Chen <alpha.chen@gmail.com>"]
 [dependencies]
 error-chain = "0.10"
 git2 = "0.6"
+
+[dev-dependencies]
+tempdir = "0.3"
