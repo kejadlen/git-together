@@ -4,5 +4,5 @@ version = "0.1.0-alpha.10"
 authors = ["Alpha Chen <alpha.chen@gmail.com>"]
 
 [dependencies]
-error-chain = "0.5"
+error-chain = "0.10"
 git2 = "0.6"
