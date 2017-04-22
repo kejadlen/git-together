@@ -2,4 +2,9 @@ extern crate git_together;
 #[macro_use]
 extern crate error_chain;
 
-quick_main!(git_together::run);
+use std::env;
+
+quick_main!(|| {
+    let args: Vec<String> = env::args().skip(1).collect();
+    git_together::run(args)
+});
