@@ -106,13 +106,19 @@ pub enum ConfigScope {
 
 impl GitTogether<git::Config> {
     pub fn new(scope: ConfigScope) -> Result<Self> {
-        let repo = git::Repo::new();
-        if let Ok(ref repo) = repo {
-            let _ = repo.auto_include(&format!(".{}", NAMESPACE));
-        }
+        let config = match scope {
+            ConfigScope::Local => {
+                let repo = git::Repo::new();
+                if let Ok(ref repo) = repo {
+                    let _ = repo.auto_include(&format!(".{}", NAMESPACE));
+                };
 
-        let config = repo.and_then(|r| r.config())
-            .or_else(|_| git::Config::new(scope))?;
+                repo.and_then(|r| r.config())
+                    .or_else(|_| git::Config::new(scope))?
+            }
+            ConfigScope::Global => git::Config::new(scope)?,
+        };
+
         let domain = config.get(&namespaced("domain")).ok();
         let author_parser = AuthorParser { domain: domain };
 

@@ -88,7 +88,7 @@ impl Config {
     pub fn new(scope: ConfigScope) -> Result<Self> {
         let config = match scope {
             ConfigScope::Local => git2::Config::open_default(),
-            ConfigScope::Global => git2::Config::new().and_then(|mut c| c.open_global()),
+            ConfigScope::Global => git2::Config::open_default().and_then(|mut r| r.open_global()),
         };
 
         config
