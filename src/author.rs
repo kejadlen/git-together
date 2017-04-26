@@ -43,9 +43,9 @@ impl AuthorParser {
         };
 
         Ok(Author {
-            name: name.into(),
-            email: email,
-        })
+               name: name.into(),
+               email: email,
+           })
     }
 }
 
@@ -76,7 +76,8 @@ mod tests {
         let author = author_parser.parse("Jane Doe; ");
         assert!(author.is_err());
 
-        let author = author_parser.parse("Jane Doe; jane.doe@example.edu")
+        let author = author_parser
+            .parse("Jane Doe; jane.doe@example.edu")
             .unwrap();
         assert_eq!(author.name, "Jane Doe");
         assert_eq!(author.email, "jane.doe@example.edu");
