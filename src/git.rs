@@ -12,10 +12,10 @@ pub struct Repo {
 
 impl Repo {
     pub fn new() -> Result<Self> {
-        let repo = env::current_dir().chain_err(|| "")
-            .and_then(|current_dir| {
-                git2::Repository::discover(current_dir).chain_err(|| "")
-            })?;
+        let repo =
+            env::current_dir()
+                .chain_err(|| "")
+                .and_then(|current_dir| git2::Repository::discover(current_dir).chain_err(|| ""))?;
         Ok(Repo { repo: repo })
     }
 
@@ -48,29 +48,34 @@ impl Repo {
         }
 
         let mut config = self.local_config()?;
-        config.set_multivar("include.path", "^$", &include_path)
+        config
+            .set_multivar("include.path", "^$", &include_path)
             .and(Ok(()))
             .chain_err(|| "")
     }
 
     fn include_paths(&self) -> Result<Vec<String>> {
         let config = self.local_config()?;
-        let include_paths: Vec<String> = config.entries(Some("include.path"))
+        let include_paths: Vec<String> = config
+            .entries(Some("include.path"))
             .chain_err(|| "")?
             .into_iter()
             .map(|entry| {
-                entry.chain_err(|| "")
-                    .and_then(|entry| {
-                        entry.value().map(String::from).ok_or("".into())
-                    })
-            })
+                     entry
+                         .chain_err(|| "")
+                         .and_then(|entry| {
+                                       entry.value().map(String::from).ok_or("".into())
+                                   })
+                 })
             .collect::<Result<_>>()?;
         Ok(include_paths)
     }
 
     fn local_config(&self) -> Result<git2::Config> {
         let config = self.repo.config().chain_err(|| "")?;
-        config.open_level(git2::ConfigLevel::Local).chain_err(|| "")
+        config
+            .open_level(git2::ConfigLevel::Local)
+            .chain_err(|| "")
     }
 }
 
@@ -110,16 +115,12 @@ impl config::Config for Config {
     fn add(&mut self, name: &str, value: &str) -> Result<()> {
         self.config
             .set_multivar(name, "^$", value)
-            .chain_err(|| {
-                format!("error adding git config '{}': '{}'", name, value)
-            })
+            .chain_err(|| format!("error adding git config '{}': '{}'", name, value))
     }
 
     fn set(&mut self, name: &str, value: &str) -> Result<()> {
         self.config
             .set_str(name, value)
-            .chain_err(|| {
-                format!("error setting git config '{}': '{}'", name, value)
-            })
+            .chain_err(|| format!("error setting git config '{}': '{}'", name, value))
     }
 }
