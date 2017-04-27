@@ -57,7 +57,7 @@ pub fn run() -> Result<()> {
                 println!("{}", author);
             }
         }
-        [sub_cmd, ref rest..] if ["commit", "merge", "revert"].contains(&sub_cmd) => {
+        [sub_cmd, ref rest..] if requires_signoff(&sub_cmd) => {
             let mut gt = GitTogether::new()?;
 
             if sub_cmd == "merge" {
@@ -83,6 +83,10 @@ pub fn run() -> Result<()> {
     };
 
     Ok(())
+}
+
+fn requires_signoff(sub_cmd: &str) -> bool {
+    ["commit", "merge", "revert"].contains(&sub_cmd)
 }
 
 pub struct GitTogether<C> {
@@ -235,6 +239,14 @@ mod tests {
 
     use author::{Author, AuthorParser};
     use config::Config;
+
+    #[test]
+    fn subcommit_requires_signoff() {
+        assert!(requires_signoff("commit"));
+        assert!(requires_signoff("merge"));
+        assert!(requires_signoff("revert"));
+        assert!(!requires_signoff("log"));
+    }
 
     #[test]
     fn get_authors() {
