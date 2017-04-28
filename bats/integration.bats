@@ -98,7 +98,7 @@
   [ "$output" = "../.git-together" ]
 }
 
-@test "git with no-one" {
+@test "git with no arguments" {
   git-together with jh
 
   run git-together with
@@ -165,6 +165,20 @@ AUTHORS
   [[ "$output" =~ "Signed-off-by: James Holden <jholden@rocinante.com>" ]]
 }
 
+@test "using a command via an alias" {
+  git-together with jh nn
+  touch foo
+  git add foo
+  git-together ci -m "add foo"
+
+  run git show --no-patch --format="%aN <%aE>"
+  [ "$output" = "James Holden <jholden@rocinante.com>" ]
+  run git show --no-patch --format="%cN <%cE>"
+  [ "$output" = "Naomi Nagata <nnagata@rocinante.com>" ]
+  run git show --no-patch --format=%B
+  [[ "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
+}
+
 @test "not in a git repo" {
   cd $BATS_TMPDIR
 
@@ -190,6 +204,7 @@ setup() {
   cd $BATS_TMPDIR/$BATS_TEST_NAME
 
   git init
+  git config alias.ci commit
   git config --add git-together.domain rocinante.com
   git config --add git-together.authors.jh "James Holden; jholden"
   git config --add git-together.authors.nn "Naomi Nagata; nnagata"
