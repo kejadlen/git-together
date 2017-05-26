@@ -82,6 +82,29 @@ that work in the same manner.
 
 ## Development
 
+### Rust version
+
+Install rust using the [rustup][rustup] tool. Installing from homebrew won't work
+because some nightly features of rust are needed to build.
+
+Then, switch to the nightly with
+
+```bash
+rustup default nightly
+```
+
+### Bats
+
+[Bats][bats] is a bash testing framework, used here for integration tests. This
+can be installed with homebrew.
+
+```bash
+brew install bats
+```
+
+[rustup]: https://www.rustup.rs/
+[bats]: https://github.com/sstephenson/bats
+
 ### Testing
 
 ```bash
