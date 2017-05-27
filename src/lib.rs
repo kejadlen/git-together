@@ -27,14 +27,13 @@ fn namespaced(name: &str) -> String {
 pub fn run() -> Result<()> {
     let all_args: Vec<_> = env::args().skip(1).collect();
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
+    let mut gt = GitTogether::new()?;
 
     match *args.as_slice() {
         ["with"] => {
             println!("{} {}",
                      option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
                      option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
-
-            let gt = GitTogether::new()?;
 
             let authors = gt.all_authors()?;
             let mut sorted: Vec<_> = authors.iter().collect();
@@ -45,21 +44,15 @@ pub fn run() -> Result<()> {
             }
         }
         ["with", "--clear"] => {
-            let mut gt = GitTogether::new()?;
-
             let _ = gt.set_active(&[]);
         }
         ["with", ref inits..] => {
-            let mut gt = GitTogether::new()?;
-
             let authors = gt.set_active(inits)?;
             for author in authors {
                 println!("{}", author);
             }
         }
-        [sub_cmd, ref rest..] if ["commit", "merge", "revert"].contains(&sub_cmd) => {
-            let mut gt = GitTogether::new()?;
-
+        [sub_cmd, ref rest..] if gt.requires_signoff(&sub_cmd)? => {
             if sub_cmd == "merge" {
                 env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
             }
@@ -224,6 +217,17 @@ impl<C: config::Config> GitTogether<C> {
             .parse(raw)
             .chain_err(|| format!("invalid author for '{}': '{}'", initials, raw))
     }
+
+    pub fn requires_signoff(&self, sub_cmd: &str) -> Result<bool> {
+        let default = sub_cmd.to_string();
+        let unaliased = self.config
+            .get(&format!("alias.{}", sub_cmd))
+            .unwrap_or(default);
+
+        let escaped: &str = unaliased.split_whitespace().next().unwrap();
+
+        Ok(["commit", "merge", "revert"].contains(&escaped))
+    }
 }
 
 #[cfg(test)]
@@ -235,6 +239,39 @@ mod tests {
 
     use author::{Author, AuthorParser};
     use config::Config;
+
+    #[test]
+    fn subcommand_requires_signoff() {
+        let config = MockConfig::new(&[("alias.ci", "commit"), ("alias.lol", "log -l")]);
+
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
+        let gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        assert!(gt.requires_signoff("commit").unwrap());
+        assert!(gt.requires_signoff("merge").unwrap());
+        assert!(gt.requires_signoff("revert").unwrap());
+        assert!(!gt.requires_signoff("log").unwrap());
+    }
+
+    #[test]
+    fn aliases_for_subcommands_also_require_signoff() {
+        let config = MockConfig::new(&[("alias.ci", "commit"),
+                                       ("alias.cia", "commit --amend"),
+                                       ("alias.lol", "log -l")]);
+
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
+        let gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        assert!(gt.requires_signoff("ci").unwrap());
+        assert!(gt.requires_signoff("cia").unwrap());
+        assert!(!gt.requires_signoff("lol").unwrap());
+    }
 
     #[test]
     fn get_authors() {
