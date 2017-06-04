@@ -61,11 +61,9 @@ impl Repo {
             .chain_err(|| "")?
             .into_iter()
             .map(|entry| {
-                     entry
-                         .chain_err(|| "")
-                         .and_then(|entry| {
-                                       entry.value().map(String::from).ok_or("".into())
-                                   })
+                     entry.and_then(|entry| {
+                                        entry.value().map(String::from).ok_or_else(|| "".into())
+                                    })
                  })
             .collect::<Result<_>>()?;
         Ok(include_paths)
