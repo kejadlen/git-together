@@ -5,7 +5,7 @@ set -ex
 # TODO This is the "test phase", tweak it as you see fit
 main() {
     # check format, if there is a diff, exit code 4 is returned
-    cargo fmt -- --write-mode=diff
+    # cargo fmt -- --write-mode=diff
 
     cross build --target $TARGET
     cross build --target $TARGET --release
