@@ -98,8 +98,24 @@
   [ "$output" = "../.git-together" ]
 }
 
-@test "git with no-one" {
+@test "list current authors" {
+  git-together with jh nn
+
+  run git-together with
+  expected=$(cat <<AUTHORS
+jh: James Holden <jholden@rocinante.com>
+nn: Naomi Nagata <nnagata@rocinante.com>
+AUTHORS
+)
+  [[ "$output" =~ "$expected" ]]
+
+  run git config git-together.active
+  [ "$output" = "jh+nn" ]
+}
+
+@test "list all authors" {
   git-together with jh
+  git-together with --list
 
   run git-together with
   expected=$(cat <<AUTHORS
@@ -168,11 +184,12 @@ AUTHORS
 @test "not in a git repo" {
   cd $BATS_TMPDIR
 
-  run git-together with
+  run git-together with --list
   [ "$status" -eq 0 ]
 }
 
 @test "clear" {
+  git-together with jh
   git-together with --clear
 
   run git config git-together.active

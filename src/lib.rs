@@ -30,10 +30,17 @@ pub fn run() -> Result<()> {
 
     match *args.as_slice() {
         ["with"] => {
-            println!("{} {}",
-                     option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
-                     option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
+            let gt = GitTogether::new()?;
 
+            let inits = gt.get_active()?;
+            let inits: Vec<_> = inits.iter().map(String::as_ref).collect();
+            let authors = gt.get_authors(&inits)?;
+
+            for (initials, author) in inits.iter().zip(authors.iter()) {
+                println!("{}: {}", initials, author);
+            }
+        }
+        ["with", "--list"] => {
             let gt = GitTogether::new()?;
 
             let authors = gt.all_authors()?;
@@ -48,6 +55,11 @@ pub fn run() -> Result<()> {
             let mut gt = GitTogether::new()?;
 
             let _ = gt.set_active(&[]);
+        }
+        ["with", "--version"] => {
+            println!("{} {}",
+                     option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
+                     option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
         }
         ["with", ref inits..] => {
             let mut gt = GitTogether::new()?;
