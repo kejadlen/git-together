@@ -111,8 +111,3 @@ brew install bats
 cargo test
 ./bats/integration.bats
 ```
-
-### TODO
-
-- Figure out what to do when `rebase`ing.
-- Add --global flag
