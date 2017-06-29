@@ -28,8 +28,10 @@ pub fn run() -> Result<()> {
     let all_args: Vec<_> = env::args().skip(1).collect();
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
+    let triggers = ["with", "together"];
+    let signoffs = ["commit", "merge", "revert"];
     match *args.as_slice() {
-        ["with"] => {
+        [sub_cmd] if triggers.contains(&sub_cmd) => {
             let gt = GitTogether::new()?;
 
             let inits = gt.get_active()?;
@@ -40,7 +42,7 @@ pub fn run() -> Result<()> {
                 println!("{}: {}", initials, author);
             }
         }
-        ["with", "--list"] => {
+        [sub_cmd, "--list"] if triggers.contains(&sub_cmd) => {
             let gt = GitTogether::new()?;
 
             let authors = gt.all_authors()?;
@@ -51,17 +53,17 @@ pub fn run() -> Result<()> {
                 println!("{}: {}", initials, author);
             }
         }
-        ["with", "--clear"] => {
+        [sub_cmd, "--clear"] if triggers.contains(&sub_cmd) => {
             let mut gt = GitTogether::new()?;
 
             let _ = gt.set_active(&[]);
         }
-        ["with", "--version"] => {
+        [sub_cmd, "--version"] if triggers.contains(&sub_cmd) => {
             println!("{} {}",
                      option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
                      option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
         }
-        ["with", ref inits..] => {
+        [sub_cmd, ref inits..] if triggers.contains(&sub_cmd) => {
             let mut gt = GitTogether::new()?;
 
             let authors = gt.set_active(inits)?;
@@ -69,7 +71,7 @@ pub fn run() -> Result<()> {
                 println!("{}", author);
             }
         }
-        [sub_cmd, ref rest..] if ["commit", "merge", "revert"].contains(&sub_cmd) => {
+        [sub_cmd, ref rest..] if signoffs.contains(&sub_cmd) => {
             let mut gt = GitTogether::new()?;
 
             if sub_cmd == "merge" {
