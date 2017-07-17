@@ -8,9 +8,13 @@ needing to change your existing git habits.
 [gp]: https://github.com/pivotal/git_scripts
 [gd]: https://github.com/git-duet/git-duet
 
-## Usage
+## Installation
 
-### Configuration
+```bash
+brew install seattle-beach/tap/git-together
+```
+
+## Configuration
 
 Here's one way to configure `git-together`, but since it uses `git config` to
 store information, there are many other ways to do it. This particular example
@@ -34,7 +38,7 @@ git config --file .git-together --add git-together.authors.nn 'Naomi Nagata; nna
 git config --file .git-together --add git-together.authors.ca 'Chrisjen Avasarala; avasarala@un.gov'
 ```
 
-### Usage
+## Usage
 
 ```bash
 # Pairing
@@ -58,7 +62,7 @@ Soloing and mobbing are set by simply passing in the right number of authors to
 so that the author/committer roles are fairly spread across the pair/mob over
 time.
 
-### Technical Details
+## Technical Details
 
 Because repo-level authors are common and there's no good way of configuring
 `git config` on cloning a repo, `git-together` will automatically include
@@ -72,7 +76,7 @@ Under the hood, `git-together` sets `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
 `git-together` also adds the `--signoff` argument to the `commit` and `revert`
 subcommands so that the commit message includes the `Signed-off-by: ` line.
 
-### Known Issues
+## Known Issues
 
 `git-together` works by aliasing `git` itself, so there are going to be issues
 with git's in-built aliases as well as other utilities (such as [Hub][hub])
