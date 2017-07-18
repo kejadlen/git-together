@@ -24,8 +24,10 @@ assumes a desire to store authors at the repo-level in a `.git-together` file.
 # `git-together` is meant to be aliased as `git`
 alias git=git-together
 
-# Use .git-together for author configuration
+# Use .git-together per project for author configuration 
 git config --add include.path ../.git-together
+# Or use one .git-together for all projects
+git config --global --add include.path ~/.git-together
 
 # Setting the default domain
 git config --file .git-together --add git-together.domain rocinante.com
