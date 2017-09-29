@@ -29,11 +29,9 @@ pub fn run() -> Result<()> {
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
     let triggers = ["with", "together"];
-    let signoffs = ["commit", "merge", "revert"];
+    let mut gt = GitTogether::new()?;
     match *args.as_slice() {
         [sub_cmd] if triggers.contains(&sub_cmd) => {
-            let gt = GitTogether::new()?;
-
             let inits = gt.get_active()?;
             let inits: Vec<_> = inits.iter().map(String::as_ref).collect();
             let authors = gt.get_authors(&inits)?;
@@ -43,8 +41,6 @@ pub fn run() -> Result<()> {
             }
         }
         [sub_cmd, "--list"] if triggers.contains(&sub_cmd) => {
-            let gt = GitTogether::new()?;
-
             let authors = gt.all_authors()?;
             let mut sorted: Vec<_> = authors.iter().collect();
             sorted.sort_by(|a, b| a.0.cmp(b.0));
@@ -54,8 +50,6 @@ pub fn run() -> Result<()> {
             }
         }
         [sub_cmd, "--clear"] if triggers.contains(&sub_cmd) => {
-            let mut gt = GitTogether::new()?;
-
             let _ = gt.set_active(&[]);
         }
         [sub_cmd, "--version"] if triggers.contains(&sub_cmd) => {
@@ -64,16 +58,12 @@ pub fn run() -> Result<()> {
                      option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version"));
         }
         [sub_cmd, ref inits..] if triggers.contains(&sub_cmd) => {
-            let mut gt = GitTogether::new()?;
-
             let authors = gt.set_active(inits)?;
             for author in authors {
                 println!("{}", author);
             }
         }
-        [sub_cmd, ref rest..] if signoffs.contains(&sub_cmd) => {
-            let mut gt = GitTogether::new()?;
-
+        [sub_cmd, ref rest..] if gt.is_signoff_cmd(&sub_cmd) => {
             if sub_cmd == "merge" {
                 env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
             }
@@ -173,6 +163,11 @@ impl<C: config::Config> GitTogether<C> {
             authors.insert(initials.into(), author);
         }
         Ok(authors)
+    }
+
+    pub fn is_signoff_cmd(&self, cmd: &str) -> bool {
+        let signoffs = ["commit", "merge", "revert"];
+        signoffs.contains(&cmd)
     }
 
     pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
@@ -398,6 +393,21 @@ mod tests {
                        name: "Joe Miller".into(),
                        email: "jmiller@starhelix.com".into(),
                    });
+    }
+
+    #[test]
+    fn is_signoff_cmd() {
+        let config = MockConfig::new(&[]);
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
+        let gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        assert_eq!(gt.is_signoff_cmd("commit"), true);
+        assert_eq!(gt.is_signoff_cmd("merge"), true);
+        assert_eq!(gt.is_signoff_cmd("revert"), true);
+        assert_eq!(gt.is_signoff_cmd("bisect"), false);
     }
 
     struct MockConfig {
