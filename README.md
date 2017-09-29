@@ -64,6 +64,16 @@ Soloing and mobbing are set by simply passing in the right number of authors to
 so that the author/committer roles are fairly spread across the pair/mob over
 time.
 
+Aliases are supported as well. You can make git-together do its thing when you
+use an alias for a committing command by configuring a comma-separated list of
+aliases:
+
+```bash
+git config git-together.aliases ci,rv,m
+# ...
+git ci
+```
+
 ## Technical Details
 
 Because repo-level authors are common and there's no good way of configuring

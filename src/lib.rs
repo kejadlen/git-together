@@ -167,7 +167,15 @@ impl<C: config::Config> GitTogether<C> {
 
     pub fn is_signoff_cmd(&self, cmd: &str) -> bool {
         let signoffs = ["commit", "merge", "revert"];
-        signoffs.contains(&cmd)
+        signoffs.contains(&cmd) || self.is_signoff_alias(&cmd)
+    }
+
+    fn is_signoff_alias(&self, cmd: &str) -> bool {
+        self.config.get(&namespaced("aliases"))
+            .unwrap_or("".to_string())
+            .split(",")
+            .find(|a| *a == cmd)
+            .is_some()
     }
 
     pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
@@ -396,7 +404,7 @@ mod tests {
     }
 
     #[test]
-    fn is_signoff_cmd() {
+    fn is_signoff_cmd_basics() {
         let config = MockConfig::new(&[]);
         let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
         let gt = GitTogether {
@@ -408,6 +416,20 @@ mod tests {
         assert_eq!(gt.is_signoff_cmd("merge"), true);
         assert_eq!(gt.is_signoff_cmd("revert"), true);
         assert_eq!(gt.is_signoff_cmd("bisect"), false);
+    }
+
+    #[test]
+    fn is_signoff_cmd_aliases() {
+        let config = MockConfig::new(&[("git-together.aliases", "ci,m,rv")]);
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
+        let gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        assert_eq!(gt.is_signoff_cmd("ci"), true);
+        assert_eq!(gt.is_signoff_cmd("m"), true);
+        assert_eq!(gt.is_signoff_cmd("rv"), true);
     }
 
     struct MockConfig {
