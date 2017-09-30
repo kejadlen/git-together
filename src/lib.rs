@@ -63,7 +63,7 @@ pub fn run() -> Result<()> {
                 println!("{}", author);
             }
         }
-        [sub_cmd, ref rest..] if gt.is_signoff_cmd(&sub_cmd) => {
+        [sub_cmd, ref rest..] if gt.is_signoff_cmd(sub_cmd) => {
             if sub_cmd == "merge" {
                 env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
             }
@@ -167,15 +167,14 @@ impl<C: config::Config> GitTogether<C> {
 
     pub fn is_signoff_cmd(&self, cmd: &str) -> bool {
         let signoffs = ["commit", "merge", "revert"];
-        signoffs.contains(&cmd) || self.is_signoff_alias(&cmd)
+        signoffs.contains(&cmd) || self.is_signoff_alias(cmd)
     }
 
     fn is_signoff_alias(&self, cmd: &str) -> bool {
         self.config.get(&namespaced("aliases"))
-            .unwrap_or("".to_string())
-            .split(",")
-            .find(|a| *a == cmd)
-            .is_some()
+            .unwrap_or_else(|_| String::new())
+            .split(',')
+            .any(|a| a == cmd)
     }
 
     pub fn signoff<'a>(&self, cmd: &'a mut Command) -> Result<&'a mut Command> {
