@@ -171,7 +171,8 @@ impl<C: config::Config> GitTogether<C> {
     }
 
     fn is_signoff_alias(&self, cmd: &str) -> bool {
-        self.config.get(&namespaced("aliases"))
+        self.config
+            .get(&namespaced("aliases"))
             .unwrap_or_else(|_| String::new())
             .split(',')
             .any(|a| a == cmd)
