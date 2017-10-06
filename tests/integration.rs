@@ -1,5 +1,9 @@
+extern crate tempdir;
+
 use std::env;
 use std::process::{Command, Output};
+
+use tempdir::TempDir;
 
 #[test]
 fn integration() {
@@ -9,7 +13,7 @@ fn integration() {
     path.push("git-together");
     let git_together = path.to_str().unwrap();
 
-    let temp_dir = env::temp_dir();
+    let temp_dir = TempDir::new("git-together").unwrap();
     let _ = env::set_current_dir(temp_dir);
 
     run("git", &["init"]);
@@ -18,8 +22,8 @@ fn integration() {
     run("git", &["config", "--add", "git-together.authors.nn", "Naomi Nagata; nnagata"]);
     run("git", &["config", "--add", "git-together.authors.ca", "Chrisjen Avasarala; avasarala@un.gov"]);
 
-    // let output = run(git_together, &[]);
-    // assert!(!output.status.success());
+    let output = run(git_together, &[]);
+    assert!(!output.status.success());
 
     run(git_together, &["with", "jh", "nn"]);
     run("touch", &["foo"]);

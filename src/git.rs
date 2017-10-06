@@ -3,19 +3,33 @@ use std::env;
 
 use git2;
 
-use config;
 use errors::*;
+
+pub trait Reader {
+    fn get(&self, name: &str) -> Result<String>;
+    fn get_all(&self, glob: &str) -> Result<HashMap<String, String>>;
+}
+
+pub trait Writer {
+    fn add(&mut self, name: &str, value: &str) -> Result<()>;
+    fn set(&mut self, name: &str, value: &str) -> Result<()>;
+}
 
 pub struct Repo {
     repo: git2::Repository,
 }
 
+pub struct Config {
+    config: git2::Config,
+}
+
 impl Repo {
     pub fn new() -> Result<Self> {
-        let repo =
-            env::current_dir()
-                .chain_err(|| "")
-                .and_then(|current_dir| git2::Repository::discover(current_dir).chain_err(|| ""))?;
+        let repo = env::current_dir().chain_err(|| "").and_then(
+            |current_dir| {
+                git2::Repository::discover(current_dir).chain_err(|| "")
+            },
+        )?;
         Ok(Repo { repo: repo })
     }
 
@@ -58,51 +72,50 @@ impl Repo {
         let config = self.local_config()?;
         let include_paths: Vec<String> = config
             .entries(Some("include.path"))
-            .chain_err(|| "")?
+            .chain_err(|| "error reading config entries")?
             .into_iter()
             .map(|entry| {
-                     entry
-                         .chain_err(|| "")
-                         .and_then(|entry| {
-                                       entry.value().map(String::from).ok_or_else(|| "".into())
-                                   })
-                 })
+                entry.chain_err(|| "").and_then(|entry| {
+                    entry.value().map(String::from).ok_or_else(|| "".into())
+                })
+            })
             .collect::<Result<_>>()?;
         Ok(include_paths)
     }
 
     fn local_config(&self) -> Result<git2::Config> {
         let config = self.repo.config().chain_err(|| "")?;
-        config
-            .open_level(git2::ConfigLevel::Local)
-            .chain_err(|| "")
+        config.open_level(git2::ConfigLevel::Local).chain_err(|| "")
     }
-}
-
-pub struct Config {
-    config: git2::Config,
 }
 
 impl Config {
     pub fn new() -> Result<Self> {
         git2::Config::open_default()
             .map(|config| Config { config: config })
-            .chain_err(|| "")
+            .chain_err(|| "error opening default git config")
+    }
+
+    pub fn global(&mut self) -> Result<Self> {
+        self.config
+            .open_global()
+            .map(|config| Config { config: config })
+            .chain_err(|| "error opening global git config")
     }
 }
 
-impl config::Config for Config {
+impl Reader for Config {
     fn get(&self, name: &str) -> Result<String> {
-        self.config
-            .get_string(name)
-            .chain_err(|| format!("error getting git config for '{}'", name))
+        self.config.get_string(name).chain_err(|| {
+            format!("error getting git config for '{}'", name)
+        })
     }
 
     fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
         let mut result = HashMap::new();
-        let entries = self.config
-            .entries(Some(glob))
-            .chain_err(|| "error getting git config entries")?;
+        let entries = self.config.entries(Some(glob)).chain_err(
+            || "error getting git config entries",
+        )?;
         for entry in &entries {
             let entry = entry.chain_err(|| "error getting git config entry")?;
             if let (Some(name), Some(value)) = (entry.name(), entry.value()) {
@@ -111,16 +124,18 @@ impl config::Config for Config {
         }
         Ok(result)
     }
+}
 
+impl Writer for Config {
     fn add(&mut self, name: &str, value: &str) -> Result<()> {
-        self.config
-            .set_multivar(name, "^$", value)
-            .chain_err(|| format!("error adding git config '{}': '{}'", name, value))
+        self.config.set_multivar(name, "^$", value).chain_err(|| {
+            format!("error adding git config '{}': '{}'", name, value)
+        })
     }
 
     fn set(&mut self, name: &str, value: &str) -> Result<()> {
-        self.config
-            .set_str(name, value)
-            .chain_err(|| format!("error setting git config '{}': '{}'", name, value))
+        self.config.set_str(name, value).chain_err(|| {
+            format!("error setting git config '{}': '{}'", name, value)
+        })
     }
 }

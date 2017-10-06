@@ -8,12 +8,8 @@ pub struct Author {
     pub email: String,
 }
 
-pub struct AuthorParser {
-    pub domain: Option<String>,
-}
-
-impl AuthorParser {
-    pub fn parse(&self, raw: &str) -> Result<Author> {
+impl Author {
+    pub fn new(raw: &str, domain: Option<&str>) -> Result<Author> {
         let mut split = raw.split(';').map(str::trim);
 
         let name = match split.next() {
@@ -32,20 +28,16 @@ impl AuthorParser {
 
         let email = if email_seed.contains('@') {
             email_seed.into()
-        } else {
-            let domain = match self.domain {
-                Some(ref domain) => domain,
-                None => {
-                    return Err("missing domain".into());
-                }
-            };
+        } else if let Some(domain) = domain {
             format!("{}@{}", email_seed, domain)
+        } else {
+            return Err("missing domain".into());
         };
 
         Ok(Author {
-               name: name.into(),
-               email: email,
-           })
+            name: name.into(),
+            email: email,
+        })
     }
 }
 
@@ -55,31 +47,29 @@ impl fmt::Display for Author {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[test]
+fn test_new_author() {
+    let author = Author::new("Jane Doe; jdoe", Some("example.com")).unwrap();
+    assert_eq!(author.name, "Jane Doe");
+    assert_eq!(author.email, "jdoe@example.com");
 
-    #[test]
-    fn new() {
-        let author_parser = AuthorParser { domain: Some("example.com".into()) };
+    let author = Author::new("", Some("example.com"));
+    assert!(author.is_err());
 
-        let author = author_parser.parse("Jane Doe; jdoe").unwrap();
-        assert_eq!(author.name, "Jane Doe");
-        assert_eq!(author.email, "jdoe@example.com");
+    let author = Author::new("Jane Doe", Some("example.com"));
+    assert!(author.is_err());
 
-        let author = author_parser.parse("");
-        assert!(author.is_err());
+    let author = Author::new("Jane Doe;", Some("example.com"));
+    assert!(author.is_err());
 
-        let author = author_parser.parse("Jane Doe");
-        assert!(author.is_err());
+    let author = Author::new("Jane Doe; jane.doe@example.edu", Some("example.com")).unwrap();
+    assert_eq!(author.name, "Jane Doe");
+    assert_eq!(author.email, "jane.doe@example.edu");
 
-        let author = author_parser.parse("Jane Doe; ");
-        assert!(author.is_err());
+    let author = Author::new("Jane Doe; jane.doe@example.edu", None).unwrap();
+    assert_eq!(author.name, "Jane Doe");
+    assert_eq!(author.email, "jane.doe@example.edu");
 
-        let author = author_parser
-            .parse("Jane Doe; jane.doe@example.edu")
-            .unwrap();
-        assert_eq!(author.name, "Jane Doe");
-        assert_eq!(author.email, "jane.doe@example.edu");
-    }
+    let author = Author::new("Jane Doe; jane.doe", None);
+    assert!(author.is_err());
 }
