@@ -21,13 +21,8 @@ store information, there are many other ways to do it. This particular example
 assumes a desire to store authors at the repo-level in a `.git-together` file.
 
 ```bash
-# `git-together` is meant to be aliased as `git`
-alias git=git-together
-
 # Use .git-together per project for author configuration 
-git config --add include.path ../.git-together
-# Or use one .git-together for all projects
-git config --global --add include.path ~/.git-together
+git config --add include.path .git-together
 
 # Setting the default domain
 git config --file .git-together --add git-together.domain rocinante.com
@@ -44,25 +39,25 @@ git config --file .git-together --add git-together.authors.ca 'Chrisjen Avasaral
 
 ```bash
 # Pairing
-git with jh nn
+git together with jh nn
 # ...
-git commit
+git together commit
 
 # Soloing
-git with nn
+git together with nn
 # ...
-git commit
+git together commit
 
 # Mobbing
-git with jh nn ca
+git together with jh nn ca
 # ...
-git commit
+git together commit
 ```
 
 Soloing and mobbing are set by simply passing in the right number of authors to
-`git with`. `git-together` automatically rotates authors after making a commit
-so that the author/committer roles are fairly spread across the pair/mob over
-time.
+`git together with`. `git-together` automatically rotates authors after making
+a commit so that the author/committer roles are fairly spread across the
+pair/mob over time.
 
 Aliases are supported as well. You can make git-together do its thing when you
 use an alias for a committing command by configuring a comma-separated list of
@@ -87,14 +82,6 @@ Under the hood, `git-together` sets `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
 `revert` subcommands so that git commits have the correct attribution..
 `git-together` also adds the `--signoff` argument to the `commit` and `revert`
 subcommands so that the commit message includes the `Signed-off-by: ` line.
-
-## Known Issues
-
-`git-together` works by aliasing `git` itself, so there are going to be issues
-with git's in-built aliases as well as other utilities (such as [Hub][hub])
-that work in the same manner.
-
-[hub]: https://hub.github.com/
 
 ## Development
 
