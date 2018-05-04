@@ -1,4 +1,4 @@
-#![feature(advanced_slice_patterns, slice_patterns)]
+#![feature(slice_patterns)]
 #![recursion_limit = "1024"]
 #[macro_use]
 
