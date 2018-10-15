@@ -29,7 +29,8 @@ pub fn run() -> Result<()> {
     let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
     let triggers = ["with", "together"];
-    let mut gt = GitTogether::new()?;
+    let mut gt = GitTogether::new(ConfigScope::Local)?;
+
     match *args.as_slice() {
         [sub_cmd] if triggers.contains(&sub_cmd) => {
             let inits = gt.get_active()?;
@@ -47,6 +48,14 @@ pub fn run() -> Result<()> {
 
             for (initials, author) in sorted {
                 println!("{}: {}", initials, author);
+            }
+        }
+        [sub_cmd, "--global", ref inits..] if triggers.contains(&sub_cmd) => {
+            let mut gt = GitTogether::new(ConfigScope::Global)?;
+
+            let authors = gt.set_active(inits)?;
+            for author in authors {
+                println!("{}", author);
             }
         }
         [sub_cmd, "--clear"] if triggers.contains(&sub_cmd) => {
@@ -94,15 +103,26 @@ pub struct GitTogether<C> {
     author_parser: AuthorParser,
 }
 
-impl GitTogether<git::Config> {
-    pub fn new() -> Result<Self> {
-        let repo = git::Repo::new();
-        if let Ok(ref repo) = repo {
-            let _ = repo.auto_include(&format!(".{}", NAMESPACE));
-        }
+pub enum ConfigScope {
+    Local,
+    Global,
+}
 
-        let config = repo.and_then(|r| r.config())
-            .or_else(|_| git::Config::new())?;
+impl GitTogether<git::Config> {
+    pub fn new(scope: ConfigScope) -> Result<Self> {
+        let config = match scope {
+            ConfigScope::Local => {
+                let repo = git::Repo::new();
+                if let Ok(ref repo) = repo {
+                    let _ = repo.auto_include(&format!(".{}", NAMESPACE));
+                };
+
+                repo.and_then(|r| r.config())
+                    .or_else(|_| git::Config::new(scope))?
+            }
+            ConfigScope::Global => git::Config::new(scope)?,
+        };
+
         let domain = config.get(&namespaced("domain")).ok();
         let author_parser = AuthorParser { domain: domain };
 
