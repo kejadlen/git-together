@@ -148,7 +148,12 @@ impl<C: config::Config> GitTogether<C> {
     }
 
     pub fn clear_active(&mut self) -> Result<()> {
-        self.config.clear(&namespaced("active"))
+        self.config.clear(&namespaced("active"))?;
+
+        let _ = self.config.clear("user.name");
+        let _ = self.config.clear("user.email");
+
+        Ok(())
     }
 
     fn save_original_user(&mut self) -> Result<()> {
@@ -403,6 +408,8 @@ mod tests {
         gt.set_active(&["nn", "jh"]).unwrap();
         gt.clear_active().unwrap();
         assert!(gt.get_active().is_err());
+        assert!(gt.config.get("user.name").is_err());
+        assert!(gt.config.get("user.email").is_err());
     }
 
     #[test]
