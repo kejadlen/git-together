@@ -17,13 +17,13 @@ impl Repo {
             env::current_dir()
                 .chain_err(|| "")
                 .and_then(|current_dir| git2::Repository::discover(current_dir).chain_err(|| ""))?;
-        Ok(Repo { repo: repo })
+        Ok(Repo { repo })
     }
 
     pub fn config(&self) -> Result<Config> {
         self.repo
             .config()
-            .map(|config| Config { config: config })
+            .map(|config| Config { config })
             .chain_err(|| "")
     }
 
@@ -92,7 +92,7 @@ impl Config {
         };
 
         config
-            .map(|config| Config { config: config })
+            .map(|config| Config { config })
             .chain_err(|| "")
     }
 }
@@ -128,5 +128,11 @@ impl config::Config for Config {
         self.config
             .set_str(name, value)
             .chain_err(|| format!("error setting git config '{}': '{}'", name, value))
+    }
+
+    fn clear(&mut self, name: &str) -> Result<()> {
+        self.config
+            .remove(name)
+            .chain_err(|| format!("error removing git config '{}'", name))
     }
 }

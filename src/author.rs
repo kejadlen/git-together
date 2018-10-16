@@ -43,9 +43,9 @@ impl AuthorParser {
         };
 
         Ok(Author {
-               name: name.into(),
-               email: email,
-           })
+            name: name.into(),
+            email,
+        })
     }
 }
 
@@ -61,7 +61,9 @@ mod tests {
 
     #[test]
     fn new() {
-        let author_parser = AuthorParser { domain: Some("example.com".into()) };
+        let author_parser = AuthorParser {
+            domain: Some("example.com".into()),
+        };
 
         let author = author_parser.parse("Jane Doe; jdoe").unwrap();
         assert_eq!(author.name, "Jane Doe");
