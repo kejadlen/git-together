@@ -26,10 +26,17 @@ fn namespaced(name: &str) -> String {
 
 pub fn run() -> Result<()> {
     let all_args: Vec<_> = env::args().skip(1).collect();
-    let args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
+    let mut args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
     let triggers = ["with", "together"];
-    let mut gt = GitTogether::new(ConfigScope::Local)?;
+
+    let mut gt = if args.contains(&"--global") {
+        GitTogether::new(ConfigScope::Global)
+    } else {
+        GitTogether::new(ConfigScope::Local)
+    }?;
+
+    args.retain(|&arg| arg != "--global");
 
     match *args.as_slice() {
         [sub_cmd] if triggers.contains(&sub_cmd) => {
@@ -48,14 +55,6 @@ pub fn run() -> Result<()> {
 
             for (initials, author) in sorted {
                 println!("{}: {}", initials, author);
-            }
-        }
-        [sub_cmd, "--global", ref inits..] if triggers.contains(&sub_cmd) => {
-            let mut gt = GitTogether::new(ConfigScope::Global)?;
-
-            let authors = gt.set_active(inits)?;
-            for author in authors {
-                println!("{}", author);
             }
         }
         [sub_cmd, "--clear"] if triggers.contains(&sub_cmd) => {
