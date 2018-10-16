@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use errors::*;
+use std::collections::HashMap;
 
 pub trait Config {
     fn get(&self, name: &str) -> Result<String>;

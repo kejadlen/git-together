@@ -4,8 +4,8 @@ use std::env;
 use git2;
 
 use config;
-use ConfigScope;
 use errors::*;
+use ConfigScope;
 
 pub struct Repo {
     repo: git2::Repository,
@@ -13,10 +13,9 @@ pub struct Repo {
 
 impl Repo {
     pub fn new() -> Result<Self> {
-        let repo =
-            env::current_dir()
-                .chain_err(|| "")
-                .and_then(|current_dir| git2::Repository::discover(current_dir).chain_err(|| ""))?;
+        let repo = env::current_dir()
+            .chain_err(|| "")
+            .and_then(|current_dir| git2::Repository::discover(current_dir).chain_err(|| ""))?;
         Ok(Repo { repo })
     }
 
@@ -62,21 +61,17 @@ impl Repo {
             .chain_err(|| "")?
             .into_iter()
             .map(|entry| {
-                     entry
-                         .chain_err(|| "")
-                         .and_then(|entry| {
-                                       entry.value().map(String::from).ok_or_else(|| "".into())
-                                   })
-                 })
+                entry
+                    .chain_err(|| "")
+                    .and_then(|entry| entry.value().map(String::from).ok_or_else(|| "".into()))
+            })
             .collect::<Result<_>>()?;
         Ok(include_paths)
     }
 
     fn local_config(&self) -> Result<git2::Config> {
         let config = self.repo.config().chain_err(|| "")?;
-        config
-            .open_level(git2::ConfigLevel::Local)
-            .chain_err(|| "")
+        config.open_level(git2::ConfigLevel::Local).chain_err(|| "")
     }
 }
 
@@ -91,9 +86,7 @@ impl Config {
             ConfigScope::Global => git2::Config::open_default().and_then(|mut r| r.open_global()),
         };
 
-        config
-            .map(|config| Config { config })
-            .chain_err(|| "")
+        config.map(|config| Config { config }).chain_err(|| "")
     }
 }
 
@@ -106,7 +99,8 @@ impl config::Config for Config {
 
     fn get_all(&self, glob: &str) -> Result<HashMap<String, String>> {
         let mut result = HashMap::new();
-        let entries = self.config
+        let entries = self
+            .config
             .entries(Some(glob))
             .chain_err(|| "error getting git config entries")?;
         for entry in &entries {
