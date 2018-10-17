@@ -74,6 +74,19 @@ git config git-together.aliases ci,rv,m
 git ci
 ```
 
+By default, `git-together` sets and rotates pairs for a single local repository. If you are working across multiple repos with a pair on a regular basis, this can be difficult to set across all of them. The `--global` flag can be passed along to set a global pair. `git-together` will still default to a local repositoriy, so if you'd like to reset from local to global, you can use the `--clear` flag.
+
+```bash
+# Set for all repos
+git with --global jh nn
+
+# Override in single repo
+git with nn
+
+# Clear local and move back to global
+git with --clear
+```
+
 ## Technical Details
 
 Because repo-level authors are common and there's no good way of configuring
