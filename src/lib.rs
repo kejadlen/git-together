@@ -24,7 +24,7 @@ fn namespaced(name: &str) -> String {
     format!("{}.{}", NAMESPACE, name)
 }
 
-pub fn run() -> Result<()> {
+pub fn run() -> Result<i32> {
     let all_args: Vec<_> = env::args().skip(1).collect();
     let mut args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
@@ -38,7 +38,7 @@ pub fn run() -> Result<()> {
 
     args.retain(|&arg| arg != "--global");
 
-    match *args.as_slice() {
+    let code = match *args.as_slice() {
         [sub_cmd] if triggers.contains(&sub_cmd) => {
             let inits = gt.get_active()?;
             let inits: Vec<_> = inits.iter().map(String::as_ref).collect();
@@ -47,6 +47,8 @@ pub fn run() -> Result<()> {
             for (initials, author) in inits.iter().zip(authors.iter()) {
                 println!("{}: {}", initials, author);
             }
+
+            0
         }
         [sub_cmd, "--list"] if triggers.contains(&sub_cmd) => {
             let authors = gt.all_authors()?;
@@ -56,9 +58,12 @@ pub fn run() -> Result<()> {
             for (initials, author) in sorted {
                 println!("{}: {}", initials, author);
             }
+
+            0
         }
         [sub_cmd, "--clear"] if triggers.contains(&sub_cmd) => {
             gt.clear_active()?;
+            0
         }
         [sub_cmd, "--version"] if triggers.contains(&sub_cmd) => {
             println!(
@@ -66,12 +71,16 @@ pub fn run() -> Result<()> {
                 option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
                 option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version")
             );
+
+            0
         }
         [sub_cmd, ref inits..] if triggers.contains(&sub_cmd) => {
             let authors = gt.set_active(inits)?;
             for author in authors {
                 println!("{}", author);
             }
+
+            0
         }
         [sub_cmd, ref rest..] if gt.is_signoff_cmd(sub_cmd) => {
             if sub_cmd == "merge" {
@@ -87,16 +96,18 @@ pub fn run() -> Result<()> {
             if status.success() {
                 gt.rotate_active()?;
             }
+            status.code().ok_or("process terminated by signal")?
         }
-        [ref args..] => {
-            Command::new("git")
+        [ref args..] => {            
+            let status = Command::new("git")
                 .args(args)
                 .status()
                 .chain_err(|| "failed to execute process")?;
+            status.code().ok_or("process terminated by signal")?
         }
     };
 
-    Ok(())
+    Ok(code)
 }
 
 pub struct GitTogether<C> {
