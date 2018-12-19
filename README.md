@@ -11,7 +11,7 @@ needing to change your existing git habits.
 ## Installation
 
 ```bash
-brew install seattle-beach/tap/git-together
+brew install pivotal/tap/git-together
 ```
 
 ## Configuration
@@ -59,9 +59,9 @@ git with jh nn ca
 git commit
 ```
 
-Soloing and mobbing are set by simply passing in the right number of authors to
-`git with`. `git-together` automatically rotates authors after making a commit
-so that the author/committer roles are fairly spread across the pair/mob over
+Soloing and mobbing are automatically set by the number of authors passed to
+`git with`. `git-together` rotates authors by default after making a commit so
+that the author/committer roles are fairly spread across the pair/mob over
 time.
 
 Aliases are supported as well. You can make git-together do its thing when you
@@ -74,7 +74,12 @@ git config git-together.aliases ci,rv,m
 git ci
 ```
 
-By default, `git-together` sets and rotates pairs for a single local repository. If you are working across multiple repos with a pair on a regular basis, this can be difficult to set across all of them. The `--global` flag can be passed along to set a global pair. `git-together` will still default to a local repositoriy, so if you'd like to reset from local to global, you can use the `--clear` flag.
+By default, `git-together` sets and rotates pairs for a single local
+repository. If you are working across multiple repos with a pair on a regular
+basis, this can be difficult to set across all of them. The `--global` flag can
+be passed along to set a global pair. `git-together` will still default to a
+local repositoriy, so if you'd like to reset from local to global, you can use
+the `--clear` flag.
 
 ```bash
 # Set for all repos
