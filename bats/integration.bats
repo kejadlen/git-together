@@ -115,9 +115,8 @@ AUTHORS
 
 @test "list all authors" {
   git-together with jh
-  git-together with --list
 
-  run git-together with
+  run git-together with --list
   expected=$(cat <<AUTHORS
 ca: Chrisjen Avasarala <avasarala@un.gov>
 jh: James Holden <jholden@rocinante.com>
