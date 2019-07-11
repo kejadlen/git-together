@@ -1,7 +1,6 @@
 #![feature(slice_patterns)]
 #![recursion_limit = "1024"]
 #[macro_use]
-
 extern crate error_chain;
 extern crate git2;
 
@@ -98,7 +97,7 @@ pub fn run() -> Result<i32> {
             }
             status.code().ok_or("process terminated by signal")?
         }
-        [ref args..] => {            
+        [ref args..] => {
             let status = Command::new("git")
                 .args(args)
                 .status()
