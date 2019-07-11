@@ -211,6 +211,7 @@ AUTHORS
 }
 
 @test "aliases" {
+  git config --local alias.ci commit
   git config --local git-together.aliases m,ci,r
   git-together with jh nn
   touch foo
