@@ -229,7 +229,7 @@ AUTHORS
 setup() {
   # [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
   rm -rf $BATS_TMPDIR/bin
-  cargo install --root $BATS_TMPDIR
+  cargo install --path . --root $BATS_TMPDIR
   PATH=$BATS_TMPDIR/bin:$PATH
 
   rm -rf $BATS_TMPDIR/$BATS_TEST_NAME
