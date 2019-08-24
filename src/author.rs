@@ -1,6 +1,6 @@
 use std::fmt;
 
-use errors::*;
+use crate::errors::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Author {

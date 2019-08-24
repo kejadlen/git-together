@@ -3,9 +3,9 @@ use std::env;
 
 use git2;
 
-use config;
-use errors::*;
-use ConfigScope;
+use crate::config;
+use crate::errors::*;
+use crate::ConfigScope;
 
 pub struct Repo {
     repo: git2::Repository,
