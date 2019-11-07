@@ -37,28 +37,25 @@ pub fn run() -> Result<i32> {
     args.retain(|&arg| arg != "--global");
 
     let mut skip_next = false;
-    let command = args.iter().find(|x| {
-        if skip_next {
-            skip_next = false;
-            return false
-        }
-        match x {
-            &&"-c" |
-            &&"--exec-path" |
-            &&"--git-dir" |
-            &&"--work-tree" |
-            &&"--namespace" |
-            &&"--super-prefix" |
-            &&"--list-cmds" |
-            &&"-C" => {
-                skip_next = true;
-                false
-            },
-            &&"--version" | &&"--help" => true,
-            v @ _ if v.starts_with("-") => false,
-            _ => true,
-        }
-    }).unwrap();
+    let command = args
+        .iter()
+        .find(|x| {
+            if skip_next {
+                skip_next = false;
+                return false;
+            }
+            match x {
+                &&"-c" | &&"--exec-path" | &&"--git-dir" | &&"--work-tree" | &&"--namespace"
+                | &&"--super-prefix" | &&"--list-cmds" | &&"-C" => {
+                    skip_next = true;
+                    false
+                }
+                &&"--version" | &&"--help" => true,
+                v if v.starts_with('-') => false,
+                _ => true,
+            }
+        })
+        .unwrap();
 
     let mut split_args = args.split(|x| x == command);
     // Guaranteed two empty arrays, at minimum, so safe to unwrap
@@ -75,7 +72,7 @@ pub fn run() -> Result<i32> {
                 for (initials, author) in inits.iter().zip(authors.iter()) {
                     println!("{}: {}", initials, author);
                 }
-            },
+            }
             ["--list"] => {
                 let authors = gt.all_authors()?;
                 let mut sorted: Vec<_> = authors.iter().collect();
@@ -84,17 +81,17 @@ pub fn run() -> Result<i32> {
                 for (initials, author) in sorted {
                     println!("{}: {}", initials, author);
                 }
-            },
+            }
             ["--clear"] => {
                 gt.clear_active()?;
-            },
+            }
             ["--version"] => {
                 println!(
                     "{} {}",
                     option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
                     option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version")
                 );
-            },
+            }
             _ => {
                 let authors = gt.set_active(command_args)?;
                 for author in authors {
