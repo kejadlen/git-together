@@ -54,6 +54,7 @@ pub fn run() -> Result<i32> {
                 skip_next = true;
                 false
             },
+            &&"--version" | &&"--help" => true,
             v @ _ if v.starts_with("-") => false,
             _ => true,
         }
