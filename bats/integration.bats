@@ -225,6 +225,13 @@ AUTHORS
   [[ "$output" =~ "Signed-off-by: Naomi Nagata <nnagata@rocinante.com>" ]]
 }
 
+@test "global args" {
+  git-together with jh nn
+  touch foo
+  git add foo
+  git-together -c commit.verbose=false commit -m "add foo"
+}
+
 setup() {
   # [ -f $BATS_TMPDIR/bin/git-together ] || cargo install --root $BATS_TMPDIR
   rm -rf $BATS_TMPDIR/bin
