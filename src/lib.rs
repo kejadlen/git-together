@@ -18,6 +18,7 @@ use config::Config;
 use errors::*;
 
 const NAMESPACE: &str = "git-together";
+const TRIGGERS: [&str; 2] = ["with", "together"];
 
 fn namespaced(name: &str) -> String {
     format!("{}.{}", NAMESPACE, name)
@@ -27,8 +28,6 @@ pub fn run() -> Result<i32> {
     let all_args: Vec<_> = env::args().skip(1).collect();
     let mut args: Vec<&str> = all_args.iter().map(String::as_ref).collect();
 
-    let triggers = ["with", "together"];
-
     let mut gt = if args.contains(&"--global") {
         GitTogether::new(ConfigScope::Global)
     } else {
@@ -37,73 +36,95 @@ pub fn run() -> Result<i32> {
 
     args.retain(|&arg| arg != "--global");
 
-    let code = match *args.as_slice() {
-        [sub_cmd] if triggers.contains(&sub_cmd) => {
-            let inits = gt.get_active()?;
-            let inits: Vec<_> = inits.iter().map(String::as_ref).collect();
-            let authors = gt.get_authors(&inits)?;
+    let mut skip_next = false;
+    let command = args.iter().find(|x| {
+        if skip_next {
+            skip_next = false;
+            return false
+        }
+        match x {
+            &&"-c" |
+            &&"--exec-path" |
+            &&"--git-dir" |
+            &&"--work-tree" |
+            &&"--namespace" |
+            &&"--super-prefix" |
+            &&"--list-cmds" |
+            &&"-C" => {
+                skip_next = true;
+                false
+            },
+            v @ _ if v.starts_with("-") => false,
+            _ => true,
+        }
+    }).unwrap();
 
-            for (initials, author) in inits.iter().zip(authors.iter()) {
-                println!("{}: {}", initials, author);
+    let mut split_args = args.split(|x| x == command);
+    // Guaranteed two empty arrays, at minimum, so safe to unwrap
+    let global_args = split_args.next().unwrap();
+    let command_args = split_args.next().unwrap();
+
+    let code = if TRIGGERS.contains(command) {
+        match command_args {
+            [] => {
+                let inits = gt.get_active()?;
+                let inits: Vec<_> = inits.iter().map(String::as_ref).collect();
+                let authors = gt.get_authors(&inits)?;
+
+                for (initials, author) in inits.iter().zip(authors.iter()) {
+                    println!("{}: {}", initials, author);
+                }
+            },
+            ["--list"] => {
+                let authors = gt.all_authors()?;
+                let mut sorted: Vec<_> = authors.iter().collect();
+                sorted.sort_by(|a, b| a.0.cmp(b.0));
+
+                for (initials, author) in sorted {
+                    println!("{}: {}", initials, author);
+                }
+            },
+            ["--clear"] => {
+                gt.clear_active()?;
+            },
+            ["--version"] => {
+                println!(
+                    "{} {}",
+                    option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
+                    option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version")
+                );
+            },
+            _ => {
+                let authors = gt.set_active(command_args)?;
+                for author in authors {
+                    println!("{}", author);
+                }
             }
-
-            0
         }
-        [sub_cmd, "--list"] if triggers.contains(&sub_cmd) => {
-            let authors = gt.all_authors()?;
-            let mut sorted: Vec<_> = authors.iter().collect();
-            sorted.sort_by(|a, b| a.0.cmp(b.0));
 
-            for (initials, author) in sorted {
-                println!("{}: {}", initials, author);
-            }
+        0
+    } else if gt.is_signoff_cmd(command) {
+        if command == &"merge" {
+            env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
+        }
 
-            0
-        }
-        [sub_cmd, "--clear"] if triggers.contains(&sub_cmd) => {
-            gt.clear_active()?;
-            0
-        }
-        [sub_cmd, "--version"] if triggers.contains(&sub_cmd) => {
-            println!(
-                "{} {}",
-                option_env!("CARGO_PKG_NAME").unwrap_or("git-together"),
-                option_env!("CARGO_PKG_VERSION").unwrap_or("unknown version")
-            );
+        let mut cmd = Command::new("git");
+        let cmd = cmd.args(global_args);
+        let cmd = cmd.arg(command);
+        let cmd = gt.signoff(cmd)?;
+        let cmd = cmd.args(command_args);
 
-            0
+        let status = cmd.status().chain_err(|| "failed to execute process")?;
+        if status.success() {
+            gt.rotate_active()?;
         }
-        [sub_cmd, ref inits..] if triggers.contains(&sub_cmd) => {
-            let authors = gt.set_active(inits)?;
-            for author in authors {
-                println!("{}", author);
-            }
-
-            0
-        }
-        [sub_cmd, ref rest..] if gt.is_signoff_cmd(sub_cmd) => {
-            if sub_cmd == "merge" {
-                env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
-            }
-
-            let mut cmd = Command::new("git");
-            let cmd = cmd.arg(sub_cmd);
-            let cmd = gt.signoff(cmd)?;
-            let cmd = cmd.args(rest);
-
-            let status = cmd.status().chain_err(|| "failed to execute process")?;
-            if status.success() {
-                gt.rotate_active()?;
-            }
-            status.code().ok_or("process terminated by signal")?
-        }
-        [ref args..] => {
-            let status = Command::new("git")
-                .args(args)
-                .status()
-                .chain_err(|| "failed to execute process")?;
-            status.code().ok_or("process terminated by signal")?
-        }
+        status.code().ok_or("process terminated by signal")?
+    } else {
+        let status = Command::new("git")
+            .args(args)
+            .status()
+            .chain_err(|| "failed to execute process")?;
+        status.code().ok_or("process terminated by signal")?
     };
 
     Ok(code)
