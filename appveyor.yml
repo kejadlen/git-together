@@ -50,7 +50,7 @@ before_deploy:
 deploy:
   artifact: /.*\.zip/
   auth_token:
-    secure: YE4rDcGWf4rqpZ0hVxPjjixtfUpouN3O4lQGIREs+wgTo+4npHZ96yrDY89PP4zY
+    secure: T9yKTsNbrLznooZdBs2Nlj0thPKXz/G3RzDac8HPyzQRNUFh1hx+jRU8kOkSzKEG
   description: ''
   on:
     RUST_VERSION: nightly
