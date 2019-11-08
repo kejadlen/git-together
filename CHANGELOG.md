@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [0.1.0-alpha.19] - 2019-11-07
+## [0.1.0-alpha.21] - 2019-11-07
 
 ### Added
 - [Skip global args when looking for command](https://github.com/kejadlen/git-together/pull/43) (@ipsi)
