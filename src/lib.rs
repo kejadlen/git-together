@@ -1,4 +1,3 @@
-#![feature(slice_patterns)]
 #![recursion_limit = "1024"]
 #[macro_use]
 extern crate error_chain;
@@ -55,12 +54,11 @@ pub fn run() -> Result<i32> {
                 _ => true,
             }
         })
-        .unwrap();
+        .unwrap_or(&"");
 
     let mut split_args = args.split(|x| x == command);
-    // Guaranteed two empty arrays, at minimum, so safe to unwrap
-    let global_args = split_args.next().unwrap();
-    let command_args = split_args.next().unwrap();
+    let global_args = split_args.next().unwrap_or(&[]);
+    let command_args = split_args.next().unwrap_or(&[]);
 
     let code = if TRIGGERS.contains(command) {
         match command_args {
@@ -233,6 +231,7 @@ impl<C: config::Config> GitTogether<C> {
             .get(&namespaced("aliases"))
             .unwrap_or_else(|_| String::new())
             .split(',')
+            .filter(|s| s != &"")
             .any(|a| a == cmd)
     }
 
