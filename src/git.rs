@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::env;
 
-use git2;
-
 use crate::config;
 use crate::errors::*;
 use crate::ConfigScope;
