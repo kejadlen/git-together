@@ -94,7 +94,8 @@ jobs:
       - name: Create Non-Windows Asset
         if: matrix.os != 'windows-latest'
         run: |
-          tar -zvc target/release/git-together > ${{ steps.vars.outputs.non_windows_asset }}
+          tar -zvc git-together > ${{ github.workspace }}/${{ steps.vars.outputs.non_windows_asset }}
+        working-directory: target/release
 
       - name: Upload Windows Release Asset
         if: matrix.os == 'windows-latest'

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [0.1.0-alpha.23] - 2020-07-26
+## [0.1.0-alpha.24] - 2020-07-28
 
 ### Fixed
 - [Don't crash with no arguments](https://github.com/kejadlen/git-together/pull/47) (@ipsi)
