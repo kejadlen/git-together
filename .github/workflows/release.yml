@@ -1,11 +1,11 @@
 on:
   push:
-    branches:
-      - ci
+    # branches:
+    #   - ci
     tags:
       - 'v*'
 
-name: Create Release
+name: Release
 
 jobs:
   test:

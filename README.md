@@ -1,7 +1,6 @@
 # git-together
 
-[![Build Status](https://travis-ci.org/kejadlen/git-together.svg?branch=master)](https://travis-ci.org/kejadlen/git-together)
-[![Build status](https://ci.appveyor.com/api/projects/status/o4808iy6us14slxj/branch/master?svg=true)](https://ci.appveyor.com/project/AlphaChen/git-together/branch/master)
+![CI](https://github.com/kejadlen/git-together/workflows/CI/badge.svg)
 
 Following in the footsteps of [git-pair][gp] and [git-duet][gd], but without
 needing to change your existing git habits.
