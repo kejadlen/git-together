@@ -40,6 +40,18 @@ git config --file .git-together --add git-together.authors.nn 'Naomi Nagata; nna
 git config --file .git-together --add git-together.authors.ca 'Chrisjen Avasarala; avasarala@un.gov'
 ```
 
+For completion with zsh, you'll need to update your `.zshrc` to copy the existing completion rules
+from the main git binary
+
+```zsh
+# initialize the compinit system if not already
+autoload -U compinit
+compinit
+
+# tell zsh to use the completion setup for the git when using git-together
+compdef git-together=git
+```
+
 ## Usage
 
 ```bash
