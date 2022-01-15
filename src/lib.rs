@@ -167,7 +167,7 @@ impl<C: config::Config> GitTogether<C> {
         self.config.set(&namespaced("active"), &inits.join("+"))?;
 
         self.save_original_user()?;
-        if let Some(author) = authors.iter().next() {
+        if let Some(author) = authors.get(0) {
             self.set_user(&author.name, &author.email)?;
         }
 
