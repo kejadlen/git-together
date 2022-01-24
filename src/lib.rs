@@ -3,21 +3,42 @@
 extern crate error_chain;
 extern crate git2;
 
-pub mod author;
-pub mod config;
-pub mod errors;
-pub mod git;
-
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Write};
+use std::path::Path;
 use std::process::Command;
+
+use tempfile::NamedTempFile;
 
 use author::{Author, AuthorParser};
 use config::Config;
 use errors::*;
 
+pub mod author;
+pub mod config;
+pub mod errors;
+pub mod git;
+
 const NAMESPACE: &str = "git-together";
 const TRIGGERS: [&str; 2] = ["with", "together"];
+
+const GIT_FILE_OPT_SHORT: &str = "-F";
+const GIT_STDIN_OPT_SHORT: &str = "-F-";
+const GIT_FILE_OPT_LONG: &str = "--file";
+
+const GIT_FILE_OPT_READ_FROM_STDIN: &str = "-";
+
+const GIT_REUSE_OPT_SHORT: &str = "-C";
+const GIT_REUSE_OPT_LONG: &str = "--reuse-message";
+
+const GIT_REEDIT_OPT_SHORT: &str = "-c";
+const GIT_REEDIT_OPT_LONG: &str = "--reedit-message";
+
+const GIT_MESSAGE_OPT_SHORT: &str = "-m";
+const GIT_MESSAGE_OPT_LONG: &str = "--message";
 
 fn namespaced(name: &str) -> String {
     format!("{}.{}", NAMESPACE, name)
@@ -100,14 +121,26 @@ pub fn run() -> Result<i32> {
 
         0
     } else if gt.is_signoff_cmd(command) {
-        if command == &"merge" {
+        if command == &"merge" || command_args.contains(&"--amend") {
             env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
         }
 
         let mut cmd = Command::new("git");
         let cmd = cmd.args(global_args);
         let cmd = cmd.arg(command);
-        let cmd = gt.signoff(cmd)?;
+
+        let co_authored = gt
+            .config
+            .get(&namespaced("co-authored"))
+            .unwrap_or_else(|_| "0".to_string());
+
+        let mut command_args: Vec<String> = command_args.iter().map(|s| (*s).to_string()).collect();
+        let cmd = if &co_authored == "0" {
+            gt.signoff(cmd)?
+        } else {
+            gt.authored_by(&mut command_args)?;
+            cmd
+        };
         let cmd = cmd.args(command_args);
 
         let status = cmd.status().chain_err(|| "failed to execute process")?;
@@ -126,9 +159,19 @@ pub fn run() -> Result<i32> {
     Ok(code)
 }
 
+pub enum CommitMessageInputMethod {
+    File(String),
+    Message,
+    ReuseCommit,
+    ReuseCommitAndEdit,
+    Stdin,
+    Editor,
+}
+
 pub struct GitTogether<C> {
     config: C,
     author_parser: AuthorParser,
+    temp_file: RefCell<NamedTempFile>,
 }
 
 pub enum ConfigScope {
@@ -157,6 +200,7 @@ impl GitTogether<git::Config> {
         Ok(GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new()?),
         })
     }
 }
@@ -262,6 +306,109 @@ impl<C: config::Config> GitTogether<C> {
         })
     }
 
+    pub fn authored_by(&self, command_args: &mut Vec<String>) -> Result<()> {
+        let no_signoff = env::var("GIT_TOGETHER_NO_SIGNOFF").is_ok();
+        let active = self.config.get(&namespaced("active"))?;
+        let initials: Vec<_> = active.split('+').collect();
+        let authors = self.get_authors(&initials)?;
+
+        if no_signoff || authors.len() <= 1 {
+            return Ok(());
+        }
+
+        let commit_message_input_method =
+            command_args
+                .iter()
+                .enumerate()
+                .find_map(|(idx, elem)| match elem.as_str() {
+                    GIT_FILE_OPT_SHORT | GIT_FILE_OPT_LONG => {
+                        match command_args[idx + 1].as_str() {
+                            GIT_FILE_OPT_READ_FROM_STDIN => Some(CommitMessageInputMethod::Stdin),
+                            v => Some(CommitMessageInputMethod::File(v.to_string())),
+                        }
+                    }
+                    GIT_STDIN_OPT_SHORT => {
+                        Some(CommitMessageInputMethod::Stdin)
+                    }
+                    GIT_REUSE_OPT_SHORT | GIT_REUSE_OPT_LONG => {
+                        Some(CommitMessageInputMethod::ReuseCommit)
+                    }
+                    GIT_REEDIT_OPT_SHORT | GIT_REEDIT_OPT_LONG => {
+                        Some(CommitMessageInputMethod::ReuseCommitAndEdit)
+                    }
+                    GIT_MESSAGE_OPT_SHORT | GIT_MESSAGE_OPT_LONG => {
+                        Some(CommitMessageInputMethod::Message)
+                    }
+                    _ => None,
+                });
+
+        let commit_message_input_method =
+            commit_message_input_method.unwrap_or(CommitMessageInputMethod::Editor);
+
+        let authored_by: Vec<String> = authors
+            .iter()
+            .map(|a| format!("Co-authored-by: {} <{}>", a.name, a.email))
+            .skip(1)
+            .collect();
+        let authored_by_str = authored_by.join("\n");
+        let temp_file_path = self.temp_file.borrow().path().to_str().unwrap().to_string();
+        let find_first_idx = |list: &[String], match_against: &[&str]| -> usize {
+            list.iter()
+                .enumerate()
+                .find(|(_, elem)| match_against.contains(&elem.as_str()))
+                .unwrap_or((0, &"".to_string()))
+                .0
+        };
+        match commit_message_input_method {
+            CommitMessageInputMethod::Message => {
+                command_args.push("-m".to_string());
+                command_args.push(authored_by_str);
+            }
+            CommitMessageInputMethod::Editor => {
+                self.temp_file
+                    .borrow_mut()
+                    .write_all(("\n\n".to_owned() + &authored_by_str).as_bytes())?;
+                command_args.push("-t".to_string());
+                command_args.push(temp_file_path);
+            }
+            CommitMessageInputMethod::ReuseCommit => { /* Ignore - re-use without change */ }
+            CommitMessageInputMethod::ReuseCommitAndEdit => {
+                /* Ignore - hard to change and no guarantee the user wants this added */
+            }
+            CommitMessageInputMethod::Stdin => {
+                let stdin_reader = BufReader::new(std::io::stdin());
+                let mut lines: Vec<String> = stdin_reader.lines().map(|l| l.unwrap()).collect();
+                lines.push("".to_string());
+                authored_by.iter().for_each(|i| lines.push(i.clone()));
+                self.temp_file
+                    .borrow_mut()
+                    .write_all(lines.join("\n").as_bytes())?;
+                let insert_idx =
+                    find_first_idx(command_args, &[GIT_FILE_OPT_SHORT, GIT_FILE_OPT_LONG, GIT_STDIN_OPT_SHORT]);
+                if &command_args[insert_idx] == &GIT_STDIN_OPT_SHORT {
+                    command_args[insert_idx] = GIT_FILE_OPT_SHORT.to_string();
+                    command_args.insert(insert_idx + 1, temp_file_path);
+                } else {
+                    command_args[insert_idx + 1] = temp_file_path;
+                }
+            }
+            CommitMessageInputMethod::File(input_file) => {
+                let file_reader = BufReader::new(File::open(Path::new(&input_file))?);
+                let mut lines: Vec<String> = file_reader.lines().map(|l| l.unwrap()).collect();
+                lines.push("".to_string());
+                authored_by.iter().for_each(|i| lines.push(i.clone()));
+                self.temp_file
+                    .borrow_mut()
+                    .write_all(lines.join("\n").as_bytes())?;
+                let insert_idx =
+                    find_first_idx(command_args, &[GIT_FILE_OPT_SHORT, GIT_FILE_OPT_LONG]);
+                command_args[insert_idx + 1] = temp_file_path;
+            }
+        };
+
+        Ok(())
+    }
+
     fn get_active(&self) -> Result<Vec<String>> {
         self.config
             .get(&namespaced("active"))
@@ -302,13 +449,13 @@ impl<C: config::Config> GitTogether<C> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::collections::HashMap;
     use std::ops::Index;
 
     use author::{Author, AuthorParser};
     use config::Config;
+
+    use super::*;
 
     #[test]
     fn get_authors() {
@@ -330,6 +477,7 @@ mod tests {
         let gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         assert!(gt.get_authors(&["jh"]).is_err());
@@ -383,6 +531,7 @@ mod tests {
         let mut gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         gt.set_active(&["jh"]).unwrap();
@@ -407,6 +556,7 @@ mod tests {
         let mut gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         gt.set_active(&["nn", "jh"]).unwrap();
@@ -431,6 +581,7 @@ mod tests {
         let mut gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         gt.set_active(&["nn", "jh"]).unwrap();
@@ -454,6 +605,7 @@ mod tests {
         let mut gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         gt.set_active(&["nn"]).unwrap();
@@ -475,6 +627,7 @@ mod tests {
         let mut gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         gt.rotate_active().unwrap();
@@ -498,6 +651,7 @@ mod tests {
         let gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         let all_authors = gt.all_authors().unwrap();
@@ -534,6 +688,7 @@ mod tests {
         let gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         assert_eq!(gt.is_signoff_cmd("commit"), true);
@@ -551,6 +706,7 @@ mod tests {
         let gt = GitTogether {
             config,
             author_parser,
+            temp_file: RefCell::new(NamedTempFile::new().unwrap()),
         };
 
         assert_eq!(gt.is_signoff_cmd("ci"), true);

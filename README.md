@@ -76,6 +76,7 @@ Soloing and mobbing are automatically set by the number of authors passed to
 that the author/committer roles are fairly spread across the pair/mob over
 time.
 
+### Aliases
 Aliases are supported as well. You can make git-together do its thing when you
 use an alias for a committing command by configuring a comma-separated list of
 aliases:
@@ -86,6 +87,20 @@ git config git-together.aliases ci,rv,m
 git ci
 ```
 
+### Co-Author support
+If you prefer to use the `Co-authored-by` flag [created by GitHub](https://help.github.com/en/github/committing-changes-to-your-project/creating-a-commit-with-multiple-authors),
+there is an experimental command to enable that:
+
+```bash
+git config git-together.co-authored 1
+```
+
+This will add `Co-authored-by` lines for all authors (except the primary) to your
+commit messages. It is _strongly_ recommended that you do not mix different message
+styles, e.g., using `-F- -m 'foo' -F /foo/bar` as this will have unpredictable
+results.
+
+### Author rotation
 By default, `git-together` sets and rotates pairs for a single local
 repository. If you are working across multiple repos with a pair on a regular
 basis, this can be difficult to set across all of them. The `--global` flag can
