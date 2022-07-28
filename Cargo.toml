@@ -2,8 +2,8 @@
 name = "git-together"
 version = "0.1.0-alpha.18"
 authors = ["Alpha Chen <alpha.chen@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-error-chain = "0.10"
-git2 = "0.7"
+error-chain = "0.12"
+git2 = "0.14"
