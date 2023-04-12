@@ -1,6 +1,6 @@
-[git-together]
-	domain = pivotal.io
 [git-together "authors"]
-	ac = "Alpha Chen; achen"
-	am = "Andres Medina; amedina"
-	em = "Ehren Murdick; emurdick"
+	ac = "Alpha Chen; achen@pivotal.io"
+	am = "Andres Medina; amedina@pivotal.io"
+	em = "Ehren Murdick; emurdick@pivotal.io"
+	ad = "Alden Davidson; alden.davidson@sage.northcom.mil"
+	dr = "Demetrious Robinson; demetrious.robinson.ctr@sage.northcom.mil"
