@@ -3,18 +3,20 @@
 extern crate error_chain;
 extern crate git2;
 
-pub mod author;
-pub mod config;
-pub mod errors;
-pub mod git;
-
 use std::collections::HashMap;
 use std::env;
+use std::ffi::OsString;
+use std::path::PathBuf;
 use std::process::Command;
 
 use author::{Author, AuthorParser};
 use config::Config;
 use errors::*;
+
+pub mod author;
+pub mod config;
+pub mod errors;
+pub mod git;
 
 const NAMESPACE: &str = "git-together";
 const TRIGGERS: [&str; 2] = ["with", "together"];
@@ -99,28 +101,61 @@ pub fn run() -> Result<i32> {
         }
 
         0
-    } else if gt.is_signoff_cmd(command) {
-        if command == &"merge" {
-            env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
-        }
-
-        let mut cmd = Command::new("git");
-        let cmd = cmd.args(global_args);
-        let cmd = cmd.arg(command);
-        let cmd = gt.signoff(cmd)?;
-        let cmd = cmd.args(command_args);
-
-        let status = cmd.status().chain_err(|| "failed to execute process")?;
-        if status.success() {
-            gt.rotate_active()?;
-        }
-        status.code().ok_or("process terminated by signal")?
     } else {
-        let status = Command::new("git")
-            .args(args)
-            .status()
-            .chain_err(|| "failed to execute process")?;
-        status.code().ok_or("process terminated by signal")?
+        let mut inner_code = 0;
+
+        // check that cert exists
+        let cert_initials = gt.get_active()?.first().ok_or("Cannot get author's initials")?.to_string();
+        let cert_filename = "id_".to_string() + cert_initials.as_str();
+        let cert_path: PathBuf = ["~/.ssh", cert_filename.as_str()].iter().collect();
+        if !cert_path.as_path().is_file() {
+            eprintln!("SSH file for author {} not found! Expected path: {}", cert_initials, cert_path.into_os_string().into_string().unwrap());
+            inner_code = 1
+        }
+
+        if inner_code != 1 {
+            // save existing and set new env var
+            let existing_git_ssh_command = match env::var_os("GIT_SSH_COMMAND") {
+                Some(val) => val,
+                None => OsString::new()
+            };
+            env::set_var("GIT_SSH_COMMAND", "ssh -i ~/.ssh/${certName} -F /dev/null");
+
+            inner_code = if gt.is_signoff_cmd(command) {
+                if command == &"merge" {
+                    env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
+                }
+
+                let mut cmd = Command::new("git");
+                let cmd = cmd.args(global_args);
+                let cmd = cmd.arg(command);
+                let cmd = gt.signoff(cmd)?;
+                let cmd = cmd.args(command_args);
+
+                let status = cmd.status().chain_err(|| "failed to execute process")?;
+                if status.success() {
+                    gt.rotate_active()?;
+                }
+                status.code().ok_or("process terminated by signal")?
+            } else {
+                let status = Command::new("git")
+                    .args(args)
+                    .status()
+                    .chain_err(|| "failed to execute process")?;
+
+                status.code().ok_or("process terminated by signal")?
+            };
+
+            // reset back to existing env var or delete if none
+            if existing_git_ssh_command.is_empty() {
+                env::remove_var("GIT_SSH_COMMAND");
+            } else {
+                env::set_var("GIT_SSH_COMMAND", existing_git_ssh_command);
+            }
+        }
+
+
+        inner_code
     };
 
     Ok(code)
@@ -302,13 +337,13 @@ impl<C: config::Config> GitTogether<C> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::collections::HashMap;
     use std::ops::Index;
 
     use author::{Author, AuthorParser};
     use config::Config;
+
+    use super::*;
 
     #[test]
     fn get_authors() {
@@ -347,7 +382,7 @@ mod tests {
                 Author {
                     name: "Alex Kamal".into(),
                     email: "akamal@rocinante.com".into(),
-                }
+                },
             ]
         );
         assert_eq!(
@@ -364,7 +399,7 @@ mod tests {
                 Author {
                     name: "Joe Miller".into(),
                     email: "jmiller@starhelix.com".into(),
-                }
+                },
             ]
         );
     }
