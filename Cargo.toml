@@ -7,3 +7,4 @@ edition = "2021"
 [dependencies]
 error-chain = "0.12"
 git2 = "0.14"
+shellexpand = "3.1.0"

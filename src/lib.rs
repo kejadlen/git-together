@@ -2,6 +2,7 @@
 #[macro_use]
 extern crate error_chain;
 extern crate git2;
+extern crate shellexpand;
 
 use std::collections::HashMap;
 use std::env;
@@ -107,11 +108,12 @@ pub fn run() -> Result<i32> {
         // check that cert exists
         let cert_initials = gt.get_active()?.first().ok_or("Cannot get author's initials")?.to_string();
         let cert_filename = "id_".to_string() + cert_initials.as_str();
-        let cert_path: PathBuf = ["~/.ssh", cert_filename.as_str()].iter().collect();
+        let cert_path: PathBuf = [shellexpand::tilde("~/.ssh").to_string(), cert_filename].iter().collect();
         if !cert_path.as_path().is_file() {
-            eprintln!("SSH file for author {} not found! Expected path: {}", cert_initials, cert_path.into_os_string().into_string().unwrap());
+            eprintln!("SSH file for author {} not found! Expected path: {}", cert_initials, cert_path.clone().into_os_string().into_string().unwrap());
             inner_code = 1
         }
+        let git_ssh_cmd = format!("{}{}{}", "ssh -i ", cert_path.display(), " -F /dev/null");
 
         if inner_code != 1 {
             // save existing and set new env var
@@ -119,7 +121,7 @@ pub fn run() -> Result<i32> {
                 Some(val) => val,
                 None => OsString::new()
             };
-            env::set_var("GIT_SSH_COMMAND", "ssh -i ~/.ssh/${certName} -F /dev/null");
+            env::set_var("GIT_SSH_COMMAND", git_ssh_cmd);
 
             inner_code = if gt.is_signoff_cmd(command) {
                 if command == &"merge" {
