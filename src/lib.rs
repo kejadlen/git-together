@@ -107,13 +107,14 @@ pub fn run() -> Result<i32> {
 
         // check that cert exists
         let cert_initials = gt.get_active()?.first().ok_or("Cannot get author's initials")?.to_string();
-        let cert_filename = "id_".to_string() + cert_initials.as_str();
+        let cert_filename = format!("{}{}", "id_", cert_initials);
         let cert_path: PathBuf = [shellexpand::tilde("~/.ssh").to_string(), cert_filename].iter().collect();
+        let cert_path_str = cert_path.clone().into_os_string().into_string().unwrap_or_default();
         if !cert_path.as_path().is_file() {
-            eprintln!("SSH file for author {} not found! Expected path: {}", cert_initials, cert_path.clone().into_os_string().into_string().unwrap());
+            eprintln!("SSH file for author {} not found! Expected path: {}", cert_initials, cert_path_str);
             inner_code = 1
         }
-        let git_ssh_cmd = format!("{}{}{}", "ssh -i ", cert_path.display(), " -F /dev/null");
+        let git_ssh_cmd = format!("{}{}{}", "ssh -i ", cert_path_str, " -F /dev/null");
 
         if inner_code != 1 {
             // save existing and set new env var
