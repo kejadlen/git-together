@@ -11,7 +11,7 @@ needing to change your existing git habits.
 ## Installation
 
 ```bash
-brew install pivotal/tap/git-together
+brew install ananaso/tap/git-together-ssh
 ```
 
 ## Configuration
