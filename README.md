@@ -22,7 +22,7 @@ assumes a desire to store authors at the repo-level in a `.git-together` file.
 
 ```bash
 # `git-together` is meant to be aliased as `git`
-alias git=git-together
+alias git=git-together-ssh
 
 # Use .git-together per project for author configuration 
 git config --add include.path ../.git-together
@@ -49,7 +49,7 @@ autoload -U compinit
 compinit
 
 # tell zsh to use the completion setup for the git when using git-together
-compdef git-together=git
+compdef git-together-ssh=git
 ```
 
 ## Usage
@@ -72,7 +72,7 @@ git commit
 ```
 
 Soloing and mobbing are automatically set by the number of authors passed to
-`git with`. `git-together` rotates authors by default after making a commit so
+`git with`. `git-together-ssh` rotates authors by default after making a commit so
 that the author/committer roles are fairly spread across the pair/mob over
 time.
 
