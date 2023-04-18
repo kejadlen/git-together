@@ -16,12 +16,14 @@ brew install ananaso/tap/git-together-ssh
 
 ## Configuration
 
-Here's one way to configure `git-together`, but since it uses `git config` to
+`git-together-ssh` is a bolt-on modification to `git-together`, adding functionality to select and use an SSH cert based on the user currently active. All config is compatible with `git-together`, except for the aliasing in `~/.zshrc`.
+
+Here's one way to configure `git-together-ssh`, but since it uses `git config` to
 store information, there are many other ways to do it. This particular example
 assumes a desire to store authors at the repo-level in a `.git-together` file.
 
 ```bash
-# `git-together` is meant to be aliased as `git`
+# `git-together-ssh` is meant to be aliased as `git`
 alias git=git-together-ssh
 
 # Use .git-together per project for author configuration 
