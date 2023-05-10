@@ -3,8 +3,13 @@
 Following in the footsteps of [git-pair][gp] and [git-duet][gd], but without
 needing to change your existing git habits.
 
+This project is a fork of Pivotal Lab's [git-together][gt].
+
+`git-together-ssh` is a bolt-on modification to `git-together`, adding functionality to select and use an SSH cert based on the user currently active. All config is compatible with `git-together`, except for the aliasing in `~/.zshrc`.
+
 [gp]: https://github.com/pivotal/git_scripts
 [gd]: https://github.com/git-duet/git-duet
+[gt]: https://github.com/kejadlen/git-together
 
 ## Installation
 
@@ -14,8 +19,6 @@ brew install section-31/tap/git-together-ssh
 ```
 
 ## Configuration
-
-`git-together-ssh` is a bolt-on modification to `git-together`, adding functionality to select and use an SSH cert based on the user currently active. All config is compatible with `git-together`, except for the aliasing in `~/.zshrc`.
 
 Here's one way to configure `git-together-ssh`, but since it uses `git config` to
 store information, there are many other ways to do it. This particular example
