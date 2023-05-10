@@ -1,7 +1,5 @@
 # git-together
 
-![CI](https://github.com/kejadlen/git-together/workflows/CI/badge.svg)
-
 Following in the footsteps of [git-pair][gp] and [git-duet][gd], but without
 needing to change your existing git habits.
 
@@ -11,7 +9,8 @@ needing to change your existing git habits.
 ## Installation
 
 ```bash
-brew install ananaso/tap/git-together-ssh
+brew tap --force-auto-update section-31/tap https://gitlab.com/section-31/homebrew-tap
+brew install section-31/tap/git-together-ssh
 ```
 
 ## Configuration
