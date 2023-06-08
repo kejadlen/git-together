@@ -125,7 +125,7 @@ pub fn run() -> Result<i32> {
         let cert_path: PathBuf = [shellexpand::tilde("~/.ssh").to_string(), cert_filename].iter().collect();
         let cert_path_str = cert_path.clone().into_os_string().into_string().unwrap_or_default();
         if !cert_path.as_path().is_file() {
-            eprintln!("SSH file for author {} not found! Expected path: {}", cert_initials, cert_path_str);
+            panic!("SSH file for author '{}' not found! Expected path: {}", cert_initials, cert_path_str);
         }
         let git_ssh_cmd = format!("{}{}{}", "ssh -i ", cert_path_str, " -F /dev/null");
 
