@@ -102,9 +102,23 @@ pub fn run() -> Result<i32> {
         }
 
         0
-    } else {
-        let mut inner_code = 0;
+    } else if gt.is_signoff_cmd(command) {
+        if command == &"merge" {
+            env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
+        }
 
+        let mut cmd = Command::new("git");
+        let cmd = cmd.args(global_args);
+        let cmd = cmd.arg(command);
+        let cmd = gt.signoff(cmd)?;
+        let cmd = cmd.args(command_args);
+
+        let status = cmd.status().chain_err(|| "failed to execute process")?;
+        if status.success() {
+            gt.rotate_active()?;
+        }
+        status.code().ok_or("process terminated by signal")?
+    } else if gt.is_ssh_cmd(command) {
         // check that cert exists
         let cert_initials = gt.get_active()?.first().ok_or("Cannot get author's initials")?.to_string();
         let cert_filename = format!("{}{}", "id_", cert_initials);
@@ -112,53 +126,38 @@ pub fn run() -> Result<i32> {
         let cert_path_str = cert_path.clone().into_os_string().into_string().unwrap_or_default();
         if !cert_path.as_path().is_file() {
             eprintln!("SSH file for author {} not found! Expected path: {}", cert_initials, cert_path_str);
-            inner_code = 1
         }
         let git_ssh_cmd = format!("{}{}{}", "ssh -i ", cert_path_str, " -F /dev/null");
 
-        if inner_code != 1 {
-            // save existing and set new env var
-            let existing_git_ssh_command = match env::var_os("GIT_SSH_COMMAND") {
-                Some(val) => val,
-                None => OsString::new()
-            };
-            env::set_var("GIT_SSH_COMMAND", git_ssh_cmd);
+        // save existing and set new env var
+        let existing_git_ssh_command = match env::var_os("GIT_SSH_COMMAND") {
+            Some(val) => val,
+            None => OsString::new()
+        };
+        env::set_var("GIT_SSH_COMMAND", git_ssh_cmd);
 
-            inner_code = if gt.is_signoff_cmd(command) {
-                if command == &"merge" {
-                    env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
-                }
+        let mut cmd = Command::new("git");
+        let cmd = cmd.args(global_args);
+        let cmd = cmd.arg(command);
+        let cmd = cmd.args(command_args);
 
-                let mut cmd = Command::new("git");
-                let cmd = cmd.args(global_args);
-                let cmd = cmd.arg(command);
-                let cmd = gt.signoff(cmd)?;
-                let cmd = cmd.args(command_args);
+        let status = cmd.status().chain_err(|| "failed to execute process")?;
 
-                let status = cmd.status().chain_err(|| "failed to execute process")?;
-                if status.success() {
-                    gt.rotate_active()?;
-                }
-                status.code().ok_or("process terminated by signal")?
-            } else {
-                let status = Command::new("git")
-                    .args(args)
-                    .status()
-                    .chain_err(|| "failed to execute process")?;
-
-                status.code().ok_or("process terminated by signal")?
-            };
-
-            // reset back to existing env var or delete if none
-            if existing_git_ssh_command.is_empty() {
-                env::remove_var("GIT_SSH_COMMAND");
-            } else {
-                env::set_var("GIT_SSH_COMMAND", existing_git_ssh_command);
-            }
+        // reset back to existing env var or delete if none
+        if existing_git_ssh_command.is_empty() {
+            env::remove_var("GIT_SSH_COMMAND");
+        } else {
+            env::set_var("GIT_SSH_COMMAND", existing_git_ssh_command);
         }
 
+        status.code().ok_or("process terminated by signal")?
+    } else {
+        let status = Command::new("git")
+            .args(args)
+            .status()
+            .chain_err(|| "failed to execute process")?;
 
-        inner_code
+        status.code().ok_or("process terminated by signal")?
     };
 
     Ok(code)
@@ -261,10 +260,15 @@ impl<C: config::Config> GitTogether<C> {
 
     pub fn is_signoff_cmd(&self, cmd: &str) -> bool {
         let signoffs = ["commit", "merge", "revert"];
-        signoffs.contains(&cmd) || self.is_signoff_alias(cmd)
+        signoffs.contains(&cmd) || self.is_alias(cmd)
     }
 
-    fn is_signoff_alias(&self, cmd: &str) -> bool {
+    pub fn is_ssh_cmd(&self, cmd: &str) -> bool {
+        let ssh_cmds = ["clone", "fetch", "pull", "push"];
+        ssh_cmds.contains(&cmd) || self.is_alias(cmd)
+    }
+
+    fn is_alias(&self, cmd: &str) -> bool {
         self.config
             .get(&namespaced("aliases"))
             .unwrap_or_else(|_| String::new())
