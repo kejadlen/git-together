@@ -5,6 +5,7 @@ authors = ["Alpha Chen <alpha.chen@gmail.com>, Alden Davidson <alden.davidson@sa
 edition = "2021"
 
 [dependencies]
+dialoguer = "0.10.4"
 error-chain = "0.12"
 git2 = "0.17"
 shellexpand = "3.1.0"
