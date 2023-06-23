@@ -1,6 +1,6 @@
 [package]
 name = "git-together-ssh"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Alpha Chen <alpha.chen@gmail.com>, Alden Davidson <alden.davidson@sage.northcom.mil>"]
 edition = "2021"
 license-file = "License.md"
