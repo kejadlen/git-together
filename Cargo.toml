@@ -8,7 +8,7 @@ description = "Enable seamless git usage when paired programming on a shared mac
 homepage = "https://gitlab.com/section-31/git-together-ssh"
 documentation = "https://gitlab.com/section-31/git-together-ssh/-/blob/main/README.md"
 repository = "https://gitlab.com/section-31/git-together-ssh"
-readme = "https://gitlab.com/section-31/git-together-ssh/-/blob/main/README.md"
+readme = "README.md"
 
 [dependencies]
 dialoguer = "0.10.4"
