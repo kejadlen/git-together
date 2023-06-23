@@ -1,6 +1,6 @@
 [package]
 name = "git-together-ssh"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Alpha Chen <alpha.chen@gmail.com>, Alden Davidson <alden.davidson@sage.northcom.mil>"]
 edition = "2021"
 license-file = "License.md"
@@ -10,8 +10,11 @@ documentation = "https://gitlab.com/section-31/git-together-ssh/-/blob/main/READ
 repository = "https://gitlab.com/section-31/git-together-ssh"
 readme = "README.md"
 
+# add [excludes] section to trim down binary
+
 [dependencies]
 dialoguer = "0.10.4"
 error-chain = "0.12"
-git2 = "0.17"
+# see about updating to 0.17.2
+git2 = "=0.17.1"
 shellexpand = "3.1.0"
