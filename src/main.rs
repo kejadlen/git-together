@@ -1,5 +1,5 @@
 #[macro_use]
 extern crate error_chain;
-extern crate git_together_ssh;
+extern crate git_together;
 
-quick_main!(git_together_ssh::run);
+quick_main!(git_together::run);

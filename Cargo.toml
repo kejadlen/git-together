@@ -1,20 +1,9 @@
 [package]
-name = "git-together-ssh"
-version = "0.2.1"
-authors = ["Alpha Chen <alpha.chen@gmail.com>, Alden Davidson <alden.davidson@sage.northcom.mil>"]
+name = "git-together"
+version = "0.1.0-alpha.18"
+authors = ["Alpha Chen <alpha.chen@gmail.com>"]
 edition = "2021"
-license-file = "License.md"
-description = "Enable seamless git usage when paired programming on a shared machine"
-homepage = "https://gitlab.com/section-31/git-together-ssh"
-documentation = "https://gitlab.com/section-31/git-together-ssh/-/blob/main/README.md"
-repository = "https://gitlab.com/section-31/git-together-ssh"
-readme = "README.md"
-
-# add [excludes] section to trim down binary
 
 [dependencies]
-dialoguer = "0.10.4"
 error-chain = "0.12"
-# see about updating to 0.17.2
-git2 = "=0.17.1"
-shellexpand = "3.1.0"
+git2 = "0.14"

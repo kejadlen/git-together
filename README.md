@@ -1,32 +1,28 @@
 # git-together
 
+![CI](https://github.com/kejadlen/git-together/workflows/CI/badge.svg)
+
 Following in the footsteps of [git-pair][gp] and [git-duet][gd], but without
 needing to change your existing git habits.
 
-This project is a fork of Pivotal Lab's [git-together][gt].
-
-`git-together-ssh` is a bolt-on modification to `git-together`, adding functionality to select and use an SSH cert based on the user currently active. All config is compatible with `git-together`, except for the aliasing in `~/.zshrc`.
-
 [gp]: https://github.com/pivotal/git_scripts
 [gd]: https://github.com/git-duet/git-duet
-[gt]: https://github.com/kejadlen/git-together
 
 ## Installation
 
 ```bash
-brew tap --force-auto-update section-31/tap https://gitlab.com/section-31/homebrew-tap
-brew install section-31/tap/git-together-ssh
+brew install pivotal/tap/git-together
 ```
 
 ## Configuration
 
-Here's one way to configure `git-together-ssh`, but since it uses `git config` to
+Here's one way to configure `git-together`, but since it uses `git config` to
 store information, there are many other ways to do it. This particular example
 assumes a desire to store authors at the repo-level in a `.git-together` file.
 
 ```bash
-# `git-together-ssh` is meant to be aliased as `git`
-alias git=git-together-ssh
+# `git-together` is meant to be aliased as `git`
+alias git=git-together
 
 # Use .git-together per project for author configuration 
 git config --add include.path ../.git-together
@@ -53,7 +49,7 @@ autoload -U compinit
 compinit
 
 # tell zsh to use the completion setup for the git when using git-together
-compdef git-together-ssh=git
+compdef git-together=git
 ```
 
 ## Usage
@@ -76,7 +72,7 @@ git commit
 ```
 
 Soloing and mobbing are automatically set by the number of authors passed to
-`git with`. `git-together-ssh` rotates authors by default after making a commit so
+`git with`. `git-together` rotates authors by default after making a commit so
 that the author/committer roles are fairly spread across the pair/mob over
 time.
 

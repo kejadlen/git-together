@@ -2,25 +2,19 @@
 #[macro_use]
 extern crate error_chain;
 extern crate git2;
-extern crate shellexpand;
-
-use std::collections::HashMap;
-use std::env;
-use std::ffi::OsString;
-use std::path::PathBuf;
-use std::process::Command;
-
-use dialoguer::Input;
-use dialoguer::theme::ColorfulTheme;
-
-use author::{Author, AuthorParser};
-use config::Config;
-use errors::*;
 
 pub mod author;
 pub mod config;
 pub mod errors;
 pub mod git;
+
+use std::collections::HashMap;
+use std::env;
+use std::process::Command;
+
+use author::{Author, AuthorParser};
+use config::Config;
+use errors::*;
 
 const NAMESPACE: &str = "git-together";
 const TRIGGERS: [&str; 2] = ["with", "together"];
@@ -121,92 +115,11 @@ pub fn run() -> Result<i32> {
             gt.rotate_active()?;
         }
         status.code().ok_or("process terminated by signal")?
-    } else if gt.is_ssh_cmd(command) {
-        // check that cert exists
-        let cert_initials = gt.get_active()?.first().ok_or("Cannot get author's initials")?.to_string();
-        let cert_filename = format!("{}{}", "id_", cert_initials);
-        let cert_path: PathBuf = [shellexpand::tilde("~/.ssh").to_string(), cert_filename].iter().collect();
-        let cert_path_str = cert_path.clone().into_os_string().into_string().unwrap_or_default();
-        if !cert_path.as_path().is_file() {
-            panic!("SSH file for author '{}' not found! Expected path: {}", cert_initials, cert_path_str);
-        }
-        let git_ssh_cmd = format!("{}{}{}", "ssh -i ", cert_path_str, " -F /dev/null");
-
-        // save existing and set new env var
-        let existing_git_ssh_command = match env::var_os("GIT_SSH_COMMAND") {
-            Some(val) => val,
-            None => OsString::new()
-        };
-        env::set_var("GIT_SSH_COMMAND", git_ssh_cmd);
-
-        let mut cmd = Command::new("git");
-        let cmd = cmd.args(global_args);
-        let cmd = cmd.arg(command);
-        let cmd = cmd.args(command_args);
-
-        let status = cmd.status().chain_err(|| "failed to execute process")?;
-
-        // reset back to existing env var or delete if none
-        if existing_git_ssh_command.is_empty() {
-            env::remove_var("GIT_SSH_COMMAND");
-        } else {
-            env::set_var("GIT_SSH_COMMAND", existing_git_ssh_command);
-        }
-
-        status.code().ok_or("process terminated by signal")?
-    } else if gt.is_clone_cmd(command) {
-        let ssh_cert_folder_path = shellexpand::tilde("~/.ssh").to_string();
-        // Helper function to get initials directly from user input
-        let user_input_initials = || -> String {
-            let user_initials: String = Input::with_theme(&ColorfulTheme::default())
-                .with_prompt("Please enter your initials")
-                .interact_text().unwrap_or("".into());
-
-            user_initials
-        };
-        // Get initials from .git-together's active list, or from user input if:
-        //      - .git-together file is not found
-        //      - .git-together file's active list is empty
-        let empty_str = &String::new(); // need this out here due to Rust ownership rules
-        let active_initials = gt.get_active().unwrap_or(vec![]).first().unwrap_or(empty_str).to_string();
-        let cert_initials = if active_initials.is_empty() { user_input_initials() } else { active_initials.to_string() };
-
-        let cert_filename = format!("{}{}", "id_", cert_initials);
-        let cert_path: PathBuf = [ssh_cert_folder_path, cert_filename].iter().collect();
-        let cert_path_str = cert_path.clone().into_os_string().into_string().unwrap_or_default();
-        if !cert_path.as_path().is_file() {
-            panic!("SSH file for author '{}' not found! Expected path: {}", cert_initials, cert_path_str);
-        }
-        let git_ssh_cmd = format!("{}{}{}", "ssh -i ", cert_path_str, " -F /dev/null");
-
-        // save existing and set new env var
-        let existing_git_ssh_command = match env::var_os("GIT_SSH_COMMAND") {
-            Some(val) => val,
-            None => OsString::new()
-        };
-        env::set_var("GIT_SSH_COMMAND", git_ssh_cmd);
-
-        let mut cmd = Command::new("git");
-        let cmd = cmd.args(global_args);
-        let cmd = cmd.arg(command);
-        let cmd = cmd.args(command_args);
-
-        let status = cmd.status().chain_err(|| "failed to execute process")?;
-
-        // reset back to existing env var or delete if none
-        if existing_git_ssh_command.is_empty() {
-            env::remove_var("GIT_SSH_COMMAND");
-        } else {
-            env::set_var("GIT_SSH_COMMAND", existing_git_ssh_command);
-        }
-
-        status.code().ok_or("process terminated by signal")?
     } else {
         let status = Command::new("git")
             .args(args)
             .status()
             .chain_err(|| "failed to execute process")?;
-
         status.code().ok_or("process terminated by signal")?
     };
 
@@ -310,20 +223,10 @@ impl<C: config::Config> GitTogether<C> {
 
     pub fn is_signoff_cmd(&self, cmd: &str) -> bool {
         let signoffs = ["commit", "merge", "revert"];
-        signoffs.contains(&cmd) || self.is_alias(cmd)
+        signoffs.contains(&cmd) || self.is_signoff_alias(cmd)
     }
 
-    pub fn is_ssh_cmd(&self, cmd: &str) -> bool {
-        let ssh_cmds = ["fetch", "pull", "push"];
-        ssh_cmds.contains(&cmd) || self.is_alias(cmd)
-    }
-
-    pub fn is_clone_cmd(&self, cmd: &str) -> bool {
-        let cmd_array = ["clone"];
-        cmd_array.contains(&cmd) || self.is_alias(cmd)
-    }
-
-    fn is_alias(&self, cmd: &str) -> bool {
+    fn is_signoff_alias(&self, cmd: &str) -> bool {
         self.config
             .get(&namespaced("aliases"))
             .unwrap_or_else(|_| String::new())
@@ -399,13 +302,13 @@ impl<C: config::Config> GitTogether<C> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::collections::HashMap;
     use std::ops::Index;
 
     use author::{Author, AuthorParser};
     use config::Config;
-
-    use super::*;
 
     #[test]
     fn get_authors() {
@@ -444,7 +347,7 @@ mod tests {
                 Author {
                     name: "Alex Kamal".into(),
                     email: "akamal@rocinante.com".into(),
-                },
+                }
             ]
         );
         assert_eq!(
@@ -461,7 +364,7 @@ mod tests {
                 Author {
                     name: "Joe Miller".into(),
                     email: "jmiller@starhelix.com".into(),
-                },
+                }
             ]
         );
     }
