@@ -61,7 +61,8 @@ impl Repo {
             .for_each(|entry| {
                 let value = entry.value().unwrap_or("").to_string();
                 include_paths.push(value)
-            }).chain_err(|| "")?;
+            })
+            .chain_err(|| "")?;
         Ok(include_paths)
     }
 
@@ -99,11 +100,13 @@ impl config::Config for Config {
             .config
             .entries(Some(glob))
             .chain_err(|| "error getting git config entries")?;
-        entries.for_each(|entry| {
-            if let (Some(name), Some(value)) = (entry.name(), entry.value()) {
-                result.insert(name.into(), value.into());
-            }
-        }).chain_err(|| "")?;
+        entries
+            .for_each(|entry| {
+                if let (Some(name), Some(value)) = (entry.name(), entry.value()) {
+                    result.insert(name.into(), value.into());
+                }
+            })
+            .chain_err(|| "")?;
         Ok(result)
     }
 
