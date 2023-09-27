@@ -1,7 +1,1 @@
 target
-
-# MacOS-specific ignores
-**/.DS_STORE
-
-# IntelliJ
-.idea
