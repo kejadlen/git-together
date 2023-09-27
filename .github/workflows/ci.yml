@@ -37,7 +37,6 @@ jobs:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     steps:
       - uses: actions/checkout@v3
-      # - run: rustup component add rustfmt
       - run: cargo fmt --all -- --check
 
   clippy:
@@ -48,10 +47,4 @@ jobs:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      # - run: rustup component add clippy
       - run: cargo clippy -- -D warnings
