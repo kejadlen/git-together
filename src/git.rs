@@ -54,16 +54,14 @@ impl Repo {
 
     fn include_paths(&self) -> Result<Vec<String>> {
         let config = self.local_config()?;
-        let include_paths: Vec<String> = config
+        let mut include_paths: Vec<String> = Vec::new();
+        config
             .entries(Some("include.path"))
             .chain_err(|| "")?
-            .into_iter()
-            .map(|entry| {
-                entry
-                    .chain_err(|| "")
-                    .and_then(|entry| entry.value().map(String::from).ok_or_else(|| "".into()))
-            })
-            .collect::<Result<_>>()?;
+            .for_each(|entry| {
+                let value = entry.value().unwrap_or("").to_string();
+                include_paths.push(value)
+            }).chain_err(|| "")?;
         Ok(include_paths)
     }
 
@@ -101,12 +99,11 @@ impl config::Config for Config {
             .config
             .entries(Some(glob))
             .chain_err(|| "error getting git config entries")?;
-        for entry in &entries {
-            let entry = entry.chain_err(|| "error getting git config entry")?;
+        entries.for_each(|entry| {
             if let (Some(name), Some(value)) = (entry.name(), entry.value()) {
                 result.insert(name.into(), value.into());
             }
-        }
+        }).chain_err(|| "")?;
         Ok(result)
     }
 

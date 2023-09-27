@@ -6,4 +6,4 @@ edition = "2021"
 
 [dependencies]
 error-chain = "0.12"
-git2 = "0.14"
+git2 = "=0.17.1"
