@@ -16,14 +16,7 @@ jobs:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - run: cargo test
 
   release:
     name: Create Release
@@ -36,12 +29,17 @@ jobs:
         uses: actions/checkout@v3
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+        run: |
+          UPLOAD_URL="$(
+            curl -L \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/${{ github.repository }}/releases \
+              -d '{"tag_name":"${{ github.ref }}","target_commitish":"${{ github.ref }}","name":"${{ github.ref }}","body":"# ${{ github.ref }}","draft":true,"prerelease":false,"generate_release_notes":false}' \
+            | jq --raw-output .upload_url)"
+          echo "upload_url=$UPLOAD_URL" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build Binaries
@@ -52,22 +50,14 @@ jobs:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
+      - run: cargo build --release
 
       - name: Set Asset Names
         id: vars
         run: |
           triple=$(rustup show active-toolchain | awk '{print $1}')
-          echo "::set-output name=windows_asset::git-together-${GITHUB_REF#refs/*/}-${triple}.zip"
-          echo "::set-output name=non_windows_asset::git-together-${GITHUB_REF#refs/*/}-${triple}.tar.gz"
+          echo "windows_asset=git-together-${GITHUB_REF#refs/*/}-${triple}.zip" >> "$GITHUB_OUTPUT"
+          echo "non_windows_asset=git-together-${GITHUB_REF#refs/*/}-${triple}.tar.gz" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Create Windows Asset
@@ -99,22 +89,24 @@ jobs:
 
       - name: Upload Windows Release Asset
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./${{ steps.vars.outputs.windows_asset }}
-          asset_name: ${{ steps.vars.outputs.windows_asset }}
-          asset_content_type: application/zip
+        run: |
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/zip" \
+            "${${{ needs.release.outputs.upload_url }}/'{?name,label}'/?name=${{ steps.vars.outputs.windows_asset }}}" \
+            --data-binary "@${{ steps.vars.outputs.windows_asset }}"
 
       - name: Upload Non-Windows Release Asset
         if: matrix.os != 'windows-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./${{ steps.vars.outputs.non_windows_asset }}
-          asset_name: ${{ steps.vars.outputs.non_windows_asset }}
-          asset_content_type: application/gzip
+        run: |
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/gzip" \
+            "${${{ needs.release.outputs.upload_url }}/'{?name,label}'/?name=${{ steps.vars.outputs.non_windows_asset }}}" \
+            --data-binary "@${{ steps.vars.outputs.non_windows_asset }}"
