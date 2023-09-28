@@ -81,7 +81,7 @@ checksum = "6fb8d784f27acf97159b40fc4db5ecd8aa23b9ad5ef69cdd136d3bc80665f0c0"
 
 [[package]]
 name = "git-together"
-version = "0.1.0-alpha.18"
+version = "0.1.0-alpha.25"
 dependencies = [
  "error-chain",
  "git2",

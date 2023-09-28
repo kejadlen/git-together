@@ -1,6 +1,6 @@
 [package]
 name = "git-together"
-version = "0.1.0-alpha.18"
+version = "0.1.0-alpha.25"
 authors = ["Alpha Chen <alpha.chen@gmail.com>"]
 edition = "2021"
 
