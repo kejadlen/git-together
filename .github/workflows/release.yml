@@ -37,7 +37,7 @@ jobs:
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               https://api.github.com/repos/${{ github.repository }}/releases \
-              -d '{"tag_name":"${{ github.ref_name }}","target_commitish":"${{ github.ref_name }}","name":"${{ github.ref_name }}","body":"# ${{ github.ref_name }}","draft":true,"prerelease":false,"generate_release_notes":false}')"
+              -d '{"tag_name":"${{ github.ref_name }}","name":"${{ github.ref_name }}","body":"# ${{ github.ref_name }}","draft":true,"prerelease":false,"generate_release_notes":false}')"
           echo "$response"
           upload_url="$(echo "$response" | jq --raw-output .upload_url)"
           echo "upload_url=$UPLOAD_URL" >> "$GITHUB_OUTPUT"
