@@ -96,9 +96,8 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Content-Type: application/zip" \
-            "${UPLOAD_URL}?name=${{ steps.vars.outputs.windows_asset }}" \
+            "${{ needs.release.outputs.upload_url }}?name=${{ steps.vars.outputs.windows_asset }}" \
             --data-binary "@${{ steps.vars.outputs.windows_asset }}"
-          UPLOAD_URL: ${{ needs.release.outputs.upload_url }}
 
       - name: Upload Non-Windows Release Asset
         if: matrix.os != 'windows-latest'
@@ -109,7 +108,5 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Content-Type: application/gzip" \
-            "${UPLOAD_URL}?name=${{ steps.vars.outputs.non_windows_asset }}" \
+            "${{ needs.release.outputs.upload_url }}?name=${{ steps.vars.outputs.non_windows_asset }}" \
             --data-binary "@${{ steps.vars.outputs.non_windows_asset }}"
-        env:
-          UPLOAD_URL: ${{ needs.release.outputs.upload_url }}
