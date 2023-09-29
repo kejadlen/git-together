@@ -9,7 +9,6 @@ name: Test CI
 jobs:
   test-ci:
     name: Build Binaries
-    needs: release
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
