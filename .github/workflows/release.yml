@@ -56,7 +56,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           rustup target add aarch64-apple-darwin
-          cargo build --target aarch64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
 
           asset=git-together-${GITHUB_REF#refs/*/}-aarch64-apple-darwin.tar.gz
           cd target/aarch64-apple-darwin/release
