@@ -7,9 +7,7 @@ on:
 name: Test CI
 
 jobs:
-  test:
-  release:
-  build:
+  test-ci:
     name: Build Binaries
     needs: release
     runs-on: macos-latest
