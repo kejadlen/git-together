@@ -8,7 +8,7 @@ name: Test CI
 
 jobs:
   test-ci:
-    name: Build Binaries
+    name: Test CI
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
