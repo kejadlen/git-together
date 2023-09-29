@@ -20,7 +20,10 @@ jobs:
           cargo build --release --target aarch64-apple-darwin
 
           asset=git-together-${GITHUB_REF#refs/*/}-aarch64-apple-darwin.tar.gz
-          ls -l
-          ls -l target
+          echo "${asset}"
           cd target/aarch64-apple-darwin/release
+          ls -l
           tar -zvc git-together > ${{ github.workspace }}/${asset}
+
+          cd ${{ github.workspace }}
+          ls -l
