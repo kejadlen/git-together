@@ -21,5 +21,6 @@ jobs:
 
           asset=git-together-${GITHUB_REF#refs/*/}-aarch64-apple-darwin.tar.gz
           ls -l
+          ls -l target
           cd target/aarch64-apple-darwin/release
           tar -zvc git-together > ${{ github.workspace }}/${asset}
