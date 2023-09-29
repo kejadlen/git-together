@@ -58,7 +58,7 @@ jobs:
           rustup target add aarch64-apple-darwin
           cargo build --target aarch64-apple-darwin
 
-          asset=git-together-${GITHUB_REF#refs/*/}-aarch64-apple-darwin.tar.gz"
+          asset=git-together-${GITHUB_REF#refs/*/}-aarch64-apple-darwin.tar.gz
           tar -zvc git-together > ${{ github.workspace }}/${asset}
 
           curl -L \
