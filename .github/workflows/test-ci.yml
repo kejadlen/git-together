@@ -12,11 +12,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
+      - run: cargo build --release
 
       - name: Create and Upload Native macOS Asset
         run: |
           rustup target add aarch64-apple-darwin
-          cargo build --target aarch64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
 
           asset=git-together-${GITHUB_REF#refs/*/}-aarch64-apple-darwin.tar.gz
           ls -l
