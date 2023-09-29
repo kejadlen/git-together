@@ -53,6 +53,7 @@ jobs:
       - run: cargo build --release
 
       - name: Create and Upload Native macOS Asset
+        if: matrix.os == 'macos-latest'
         run: |
           rustup target add aarch64-apple-darwin
           cargo build --target aarch64-apple-darwin
